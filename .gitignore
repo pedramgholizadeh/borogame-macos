@@ -1,0 +1,40 @@
+# --- Build outputs ---
+build/
+dist/
+*.dmg
+*.app/
+*.o
+*.dylib
+
+# --- Upstream working tree (assembled by scripts/prepare-source.sh) ---
+upstream/
+
+# --- macOS noise ---
+.DS_Store
+._*
+Icon?
+.TemporaryItems
+.netr_history.db
+
+# --- Xcode / Qt Creator noise ---
+*.xcuserstate
+xcuserdata/
+*.autosave
+CMakeLists.txt.user*
+.pro.user*
+
+# --- Local secrets (never commit) ---
+.env
+secrets/
+*.p12
+*.pem
+keychain/
+
+# --- Editor noise ---
+.vscode/
+.idea/
+*.swp
+*~
+
+# --- Logs ---
+*.log

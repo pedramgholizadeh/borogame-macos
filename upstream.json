@@ -1,0 +1,7 @@
+{
+  "repo": "https://github.com/moonlight-stream/moonlight-qt.git",
+  "ref": "v6.2.0",
+  "commit": "de2467e433821664cdd2224aad8c89a625be1ad9",
+  "license": "GPL-3.0-or-later",
+  "description": "Pinned upstream moonlight-qt release that the Borogame macOS overlay is applied onto."
+}
