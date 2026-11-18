@@ -1,0 +1,351 @@
+diff --git a/app/Info.plist b/app/Info.plist
+index 24980b7..2163aed 100644
+--- a/app/Info.plist
++++ b/app/Info.plist
+@@ -5,15 +5,15 @@
+ 	<key>GCSupportsGameMode</key>
+ 	<true/>
+ 	<key>CFBundleExecutable</key>
+-	<string>Moonlight</string>
++	<string>Borogame</string>
+ 	<key>LSSupportsGameMode</key>
+ 	<true/>
+ 	<key>CFBundleGetInfoString</key>
+-	<string>Stream games and other applications from another PC</string>
++	<string>Stream games from the Borogame cloud gaming service</string>
+ 	<key>CFBundleIconFile</key>
+-	<string>moonlight</string>
++	<string>borogame</string>
+ 	<key>CFBundleIdentifier</key>
+-	<string>com.moonlight-stream.Moonlight</string>
++	<string>com.borogame.Borogame</string>
+ 	<key>NSHighResolutionCapable</key>
+ 	<true/>
+ 	<key>CFBundlePackageType</key>
+@@ -41,7 +41,7 @@
+ 		<true/>
+ 	</dict>
+ 	<key>NSLocalNetworkUsageDescription</key>
+-	<string>Moonlight uses the local network to connect to your gaming PC for streaming.</string>
++	<string>Borogame uses the local network to connect to your cloud gaming host for streaming.</string>
+ 	<key>NSBonjourServices</key>
+ 	<array>
+ 		<string>_nvstream._tcp</string>
+@@ -51,7 +51,7 @@
+ 	<key>CFBundleShortVersionString</key>
+ 	<string>VERSION</string>
+ 	<key>CFBundleDisplayName</key>
+-	<string>Moonlight</string>
++	<string>Borogame</string>
+     <key>LSApplicationCategoryType</key>
+ 	<string>public.app-category.games</string>
+ </dict>
+diff --git a/app/app.pro b/app/app.pro
+index 1c0661b..180525d 100644
+--- a/app/app.pro
++++ b/app/app.pro
+@@ -10,6 +10,10 @@ unix:!macx {
+ 
+ include(../globaldefs.pri)
+ 
++# Borogame service integration (see overlay/app/boro)
++SOURCES += boro/boroapi.cpp
++HEADERS += boro/boroapi.h
++
+ # Precompile QML files to avoid writing qmlcache on portable versions.
+ # Since this binds the app against the Qt runtime version, we will only
+ # do this for Windows and Mac (when disable-prebuilts is not defined),
+@@ -560,7 +564,10 @@ macx {
+ 
+     QMAKE_INFO_PLIST = $$OUT_PWD/Info.plist
+ 
+-    APP_BUNDLE_RESOURCES.files = moonlight.icns
++    # Borogame port: executable/bundle name (overrides Moonlight above)
++    TARGET = Borogame
++
++    APP_BUNDLE_RESOURCES.files = borogame.icns
+     APP_BUNDLE_RESOURCES.path = Contents/Resources
+ 
+     APP_BUNDLE_PLIST.files = $$OUT_PWD/Info.plist
+diff --git a/app/gui/PcView.qml b/app/gui/PcView.qml
+index e80135c..8b10560 100644
+--- a/app/gui/PcView.qml
++++ b/app/gui/PcView.qml
+@@ -6,6 +6,7 @@ import ComputerModel 1.0
+ 
+ import ComputerManager 1.0
+ import StreamingPreferences 1.0
++import BoroApi 1.0
+ import SystemProperties 1.0
+ import SdlGamepadKeyNavigation 1.0
+ 
+@@ -235,6 +236,9 @@ CenteredGridView {
+                 else {
+                     var pin = computerModel.generatePinString()
+ 
++                    // Borogame: relay the PIN to the service so pairing is zero-touch
++                    BoroApi.sendAutoPairPin(pin, model.activeAddress)
++
+                     // Kick off pairing in the background
+                     computerModel.pairComputer(index, pin)
+ 
+diff --git a/app/gui/computermodel.cpp b/app/gui/computermodel.cpp
+index 4e3aae3..caa072f 100644
+--- a/app/gui/computermodel.cpp
++++ b/app/gui/computermodel.cpp
+@@ -42,6 +42,8 @@ QVariant ComputerModel::data(const QModelIndex& index, int role) const
+         return computer->state == NvComputer::CS_UNKNOWN;
+     case ServerSupportedRole:
+         return computer->isSupportedServerVersion;
++    case ActiveAddressRole:
++        return computer->activeAddress.toString();
+     case DetailsRole: {
+         QString state, pairState;
+ 
+@@ -110,6 +112,8 @@ QHash<int, QByteArray> ComputerModel::roleNames() const
+     names[StatusUnknownRole] = "statusUnknown";
+     names[ServerSupportedRole] = "serverSupported";
+     names[DetailsRole] = "details";
++    // Borogame port: expose the active address for the auto-pairing relay
++    names[ActiveAddressRole] = "activeAddress";
+ 
+     return names;
+ }
+diff --git a/app/gui/computermodel.h b/app/gui/computermodel.h
+index 815cc9a..c7bdbc9 100644
+--- a/app/gui/computermodel.h
++++ b/app/gui/computermodel.h
+@@ -16,7 +16,9 @@ class ComputerModel : public QAbstractListModel
+         WakeableRole,
+         StatusUnknownRole,
+         ServerSupportedRole,
+-        DetailsRole
++        DetailsRole,
++        // Borogame port: expose the active address for the auto-pairing relay
++        ActiveAddressRole
+     };
+ 
+ public:
+diff --git a/app/gui/main.qml b/app/gui/main.qml
+index 84e7d9d..9faf90f 100644
+--- a/app/gui/main.qml
++++ b/app/gui/main.qml
+@@ -9,6 +9,7 @@ import AutoUpdateChecker 1.0
+ import StreamingPreferences 1.0
+ import SystemProperties 1.0
+ import SdlGamepadKeyNavigation 1.0
++import BoroApi 1.0
+ 
+ ApplicationWindow {
+     property bool pollingActive: false
+@@ -116,6 +117,12 @@ ApplicationWindow {
+             // the initial view and pushing it to the StackView
+             doEarlyInit()
+             push(initialView)
++
++            // Borogame: gate the app behind the service login when
++            // no license key is stored on this machine
++            if (!BoroApi.loggedIn) {
++                stackView.push("qrc:/gui/BoroLoginPage.qml")
++            }
+         }
+ 
+         onCurrentItemChanged: {
+@@ -296,8 +303,8 @@ ApplicationWindow {
+ 
+             NavigableToolButton {
+                 id: discordButton
+-                visible: SystemProperties.hasBrowser &&
+-                         stackView.currentItem instanceof SettingsView
++                // Borogame port: Discord community is upstream-specific, hide it
++                visible: false
+ 
+                 iconSource: "qrc:/res/discord.svg"
+ 
+@@ -396,7 +403,7 @@ ApplicationWindow {
+                 }
+ 
+                 // TODO need to make sure browser is brought to foreground.
+-                onClicked: Qt.openUrlExternally("https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide");
++                onClicked: Qt.openUrlExternally("https://borogame.com/faq.php");
+ 
+                 Keys.onDownPressed: {
+                     stackView.currentItem.forceActiveFocus(Qt.TabFocus)
+@@ -421,6 +428,80 @@ ApplicationWindow {
+                 }
+             }
+ 
++            // Borogame service pages ---------------------------------
++
++            NavigableToolButton {
++                id: boroLoginButton
++                visible: !BoroApi.loggedIn
++
++                iconSource: "qrc:/res/ic_boro_profile.svg"
++
++                ToolTip.delay: 1000
++                ToolTip.timeout: 3000
++                ToolTip.visible: hovered
++                ToolTip.text: qsTr("Sign in to Borogame")
++
++                onClicked: navigateTo("qrc:/gui/BoroLoginPage.qml", BoroLoginPage)
++
++                Keys.onDownPressed: {
++                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
++                }
++            }
++
++            NavigableToolButton {
++                id: boroStoreButton
++                visible: BoroApi.loggedIn
++
++                iconSource: "qrc:/res/ic_boro_store.svg"
++
++                ToolTip.delay: 1000
++                ToolTip.timeout: 3000
++                ToolTip.visible: hovered
++                ToolTip.text: qsTr("Borogame Store")
++
++                onClicked: navigateTo("qrc:/gui/BoroStorePage.qml", BoroStorePage)
++
++                Keys.onDownPressed: {
++                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
++                }
++            }
++
++            NavigableToolButton {
++                id: boroTicketsButton
++                visible: BoroApi.loggedIn
++
++                iconSource: "qrc:/res/ic_boro_tickets.svg"
++
++                ToolTip.delay: 1000
++                ToolTip.timeout: 3000
++                ToolTip.visible: hovered
++                ToolTip.text: qsTr("Borogame Tickets")
++
++                onClicked: navigateTo("qrc:/gui/BoroTicketsPage.qml", BoroTicketsPage)
++
++                Keys.onDownPressed: {
++                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
++                }
++            }
++
++            NavigableToolButton {
++                id: boroProfileButton
++                visible: BoroApi.loggedIn
++
++                iconSource: "qrc:/res/ic_boro_profile.svg"
++
++                ToolTip.delay: 1000
++                ToolTip.timeout: 3000
++                ToolTip.visible: hovered
++                ToolTip.text: qsTr("Borogame Account")
++
++                onClicked: navigateTo("qrc:/gui/BoroProfilePage.qml", BoroProfilePage)
++
++                Keys.onDownPressed: {
++                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
++                }
++            }
++
+             NavigableToolButton {
+                 id: settingsButton
+ 
+diff --git a/app/main.cpp b/app/main.cpp
+index 2b701d7..e702ada 100644
+--- a/app/main.cpp
++++ b/app/main.cpp
+@@ -54,6 +54,7 @@
+ #include "streaming/session.h"
+ #include "settings/streamingpreferences.h"
+ #include "gui/sdlgamepadkeynavigation.h"
++#include "boro/boroapi.h"
+ 
+ #if defined(Q_OS_WIN32)
+ #define IS_UNSPECIFIED_HANDLE(x) ((x) == INVALID_HANDLE_VALUE || (x) == NULL)
+@@ -428,9 +429,10 @@ int main(int argc, char *argv[])
+     // Set these here to allow us to use the default QSettings constructor.
+     // These also ensure that our cache directory is named correctly. As such,
+     // it is critical that these be called before Path::initialize().
+-    QCoreApplication::setOrganizationName("Moonlight Game Streaming Project");
+-    QCoreApplication::setOrganizationDomain("moonlight-stream.com");
+-    QCoreApplication::setApplicationName("Moonlight");
++    // Borogame port: separate QSettings namespace from upstream Moonlight
++    QCoreApplication::setOrganizationName("Borogame");
++    QCoreApplication::setOrganizationDomain("borogame.com");
++    QCoreApplication::setApplicationName("Borogame");
+ 
+     if (QFile(QDir::currentPath() + "/portable.dat").exists()) {
+         QSettings::setDefaultFormat(QSettings::IniFormat);
+@@ -464,7 +466,7 @@ int main(int argc, char *argv[])
+     if (IS_UNSPECIFIED_HANDLE(oldConErr))
+ #endif
+     {
+-        s_LoggerFile = new QFile(tempDir.filePath(QString("Moonlight-%1.log").arg(QDateTime::currentSecsSinceEpoch())));
++        s_LoggerFile = new QFile(tempDir.filePath(QString("Borogame-%1.log").arg(QDateTime::currentSecsSinceEpoch())));
+         if (s_LoggerFile->open(QIODevice::WriteOnly | QIODevice::Text)) {
+             QTextStream(stderr) << "Redirecting log output to " << s_LoggerFile->fileName() << Qt::endl;
+             s_LoggerStream.setDevice(s_LoggerFile);
+@@ -497,7 +499,7 @@ int main(int argc, char *argv[])
+ 
+ #ifdef LOG_TO_FILE
+     // Prune the oldest existing logs if there are more than 10
+-    QStringList existingLogNames = tempDir.entryList(QStringList("Moonlight-*.log"), QDir::NoFilter, QDir::SortFlag::Time);
++    QStringList existingLogNames = tempDir.entryList(QStringList("Borogame-*.log"), QDir::NoFilter, QDir::SortFlag::Time);
+     for (int i = 10; i < existingLogNames.size(); i++) {
+         qInfo() << "Removing old log file:" << existingLogNames.at(i);
+         QFile(tempDir.filePath(existingLogNames.at(i))).remove();
+@@ -715,8 +717,8 @@ int main(int argc, char *argv[])
+     // Set our app name for SDL to use with PulseAudio and PipeWire. This matches what we
+     // provide as our app name to libsoundio too. On SDL 2.0.18+, SDL_APP_NAME is also used
+     // for screensaver inhibitor reporting.
+-    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "Moonlight");
+-    SDL_SetHint(SDL_HINT_APP_NAME, "Moonlight");
++    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "Borogame");
++    SDL_SetHint(SDL_HINT_APP_NAME, "Borogame");
+ 
+     // SDL will try to lock the mouse cursor on Wayland if it's not visible in order to
+     // support applications that assume they can warp the cursor (which isn't possible
+@@ -959,6 +961,11 @@ int main(int argc, char *argv[])
+                                                    [](QQmlEngine* qmlEngine, QJSEngine*) -> QObject* {
+                                                        return StreamingPreferences::get(qmlEngine);
+                                                    });
++    qmlRegisterSingletonType<BoroApi>("BoroApi", 1, 0,
++                                      "BoroApi",
++                                      [](QQmlEngine*, QJSEngine*) -> QObject* {
++                                          return new BoroApi();
++                                      });
+ 
+     // Create the identity manager on the main thread
+     IdentityManager::get();
+diff --git a/app/qml.qrc b/app/qml.qrc
+index 5c2c369..9dd080f 100644
+--- a/app/qml.qrc
++++ b/app/qml.qrc
+@@ -1,6 +1,10 @@
+ <RCC>
+     <qresource prefix="/">
+         <file>gui/main.qml</file>
++        <file>gui/BoroLoginPage.qml</file>
++        <file>gui/BoroStorePage.qml</file>
++        <file>gui/BoroTicketsPage.qml</file>
++        <file>gui/BoroProfilePage.qml</file>
+         <file>gui/PcView.qml</file>
+         <file>gui/AppView.qml</file>
+         <file>gui/SettingsView.qml</file>
+diff --git a/app/resources.qrc b/app/resources.qrc
+index 04b71ed..fc7a655 100644
+--- a/app/resources.qrc
++++ b/app/resources.qrc
+@@ -18,6 +18,10 @@
+         <file>res/baseline-error_outline-24px.svg</file>
+         <file>res/baseline-check_circle_outline-24px.svg</file>
+         <file>res/discord.svg</file>
++        <file>res/borogame.svg</file>
++        <file>res/ic_boro_store.svg</file>
++        <file>res/ic_boro_tickets.svg</file>
++        <file>res/ic_boro_profile.svg</file>
+         <file>languages/qml_de.ts</file>
+         <file>languages/qml_de.qm</file>
+         <file>languages/qml_fr.ts</file>
