@@ -38,32 +38,69 @@
 
 ## Phase 2 — Port implementation
 
-- [ ] T2.1 `BoroApi` — Qt C++ HTTP client for all backend endpoints
-- [ ] T2.2 `BoroAuth` — login / SSO / license flows, token storage in QSettings
-- [ ] T2.3 `BoroHostManager` — `fetchHost` → add host → auto-pair via `pinPair`
-- [ ] T2.4 `BoroStore` — store listing model + game thumbnails cache
-- [ ] T2.5 `BoroTickets` — list + submit tickets (WHMCS)
-- [ ] T2.6 QML: Login page, Store grid page, Tickets page, Profile section
-- [ ] T2.7 QML: wire streaming launch (app view → session) to Borogame hosts
-- [ ] T2.8 Branding: app name, icons, SVG assets, About dialog, help URL
-- [ ] T2.9 macOS app bundle: `Info.plist`, versioning, `Borogame.icns`
-- [ ] T2.10 Upstream patch `0001-borogame-integration.patch` (minimal, surgical)
-- [ ] T2.11 `prepare-source.sh --verify` passes against pinned upstream
+- [x] T2.1 `BoroApi` — Qt C++ HTTP client for all backend endpoints
+  - *Result:* `overlay/app/boro/boroapi.{h,cpp}`; percent-encoded query building,
+    15s transfer timeout, JSON parsing per contract, busy state, signals to QML.
+- [x] T2.2 `BoroAuth` — login / SSO / license flows, token storage in QSettings
+  - *Result:* folded into `BoroApi::validateLicense` (contract returns profile
+    in the same call); license persisted via `QSettings` key `userLicense`
+    under org/app `Borogame` (set by the upstream patch in `main.cpp`).
+- [x] T2.3 `BoroHostManager` — `fetchHost` → add host → auto-pair via `pinPair`
+  - *Result:* `fetchHost()` signal → QML calls `ComputerManager.addNewHostManually`;
+    pairing relay `sendAutoPairPin(pin, ip)` hooked into `PcView.qml` right where
+    upstream generates the PIN (needs the `activeAddress` role added to ComputerModel).
+- [x] T2.4 `BoroStore` — store listing model + game thumbnails
+  - *Result:* `BoroStorePage.qml` GridView, `api.php?store=true` parsed as
+    array-of-arrays, thumbnail URLs derived from titles (space → underscore).
+- [x] T2.5 `BoroTickets` — list + submit tickets (WHMCS)
+  - *Result:* `BoroTicketsPage.qml` with status color chips
+    (Open/Answered/Customer-Reply/Closed), SSO deep links per contract.
+- [x] T2.6 QML: Login page, Store grid page, Tickets page, Profile section
+  - *Result:* 4 pages committed; login gate pushed by `main.qml` when not signed in.
+- [x] T2.7 QML: wire streaming launch to Borogame hosts
+  - *Result:* no custom launch code needed — hosts added through upstream
+    ComputerManager flow reuse the standard AppView/streaming path unchanged.
+- [x] T2.8 Branding: app name, icons, SVG assets, help URL
+  - *Result:* logo + toolbar icons (Material style), `borogame.icns` generated,
+    About dialog left upstream for now (low priority, tracked as future work).
+- [x] T2.9 macOS app bundle: `Info.plist`, versioning, `Borogame.icns`
+  - *Result:* bundle id `com.borogame.Borogame`, display name, icon file
+    updated via the integration patch; version stays upstream's `version.txt`.
+- [x] T2.10 Upstream patch `0001-borogame-integration.patch` (minimal, surgical)
+  - *Result:* 9 files, +131/−18, every anchor asserted exactly-once during
+    generation to catch upstream drift loudly.
+- [x] T2.11 `prepare-source.sh --verify` passes against pinned upstream
+  - *Result:* round-trip verified on fresh assembly (see Phase 3 T3.1).
 
 ## Phase 3 — Build & packaging
 
-- [ ] T3.1 `scripts/prepare-source.sh` (assemble upstream + overlay + patches)
-- [ ] T3.2 `scripts/build-macos.sh` (qmake/CMake build, arm64, release)
-- [ ] T3.3 `scripts/make-dmg.sh` (app bundle → DMG, optional signing/notarization)
-- [ ] T3.4 `scripts/install-local.sh` (quarantine-free local install for testing)
-- [ ] T3.5 Local build verified on this Mac (Apple Silicon, Xcode 27.2)
+- [x] T3.1 `scripts/prepare-source.sh` (assemble upstream + overlay + patches)
+  - *Result:* deterministic re-assembly, `--verify` mode for CI/pre-commit checks.
+- [x] T3.2 `scripts/build-macos.sh` (qmake build, arm64, release)
+  - *Result:* reuses upstream prebuilt libs (`setup-deps.py`, cached), arm64 only,
+    `disable-discord-rpc`.
+- [x] T3.3 `scripts/make-dmg.sh` (app bundle → DMG, optional signing/notarization)
+  - *Result:* macdeployqt + dSYM + `create-dmg` (hdiutil fallback) +
+    `SIGNING_IDENTITY` / `NOTARY_KEYCHAIN_PROFILE` env support.
+- [x] T3.4 `scripts/install-local.sh` (quarantine-free local install for testing)
+  - *Result:* /Applications install + `xattr -dr com.apple.quarantine` +
+    `codesign --verify` + launch.
+- [~] T3.5 Local build verified on this Mac (Apple Silicon, Xcode 27.2)
+  - *Result:* in progress — Qt 6 installing via Homebrew.
 
 ## Phase 4 — CI/CD
 
-- [ ] T4.1 GitHub Actions: macOS arm64 build on push/PR (artifact DMG)
-- [ ] T4.2 Conditional code signing + notarization via repository secrets
-- [ ] T4.3 Tag `v*` → GitHub Release draft with DMG attached
+- [x] T4.1 GitHub Actions: macOS arm64 build on push/PR (artifact DMG)
+  - *Result:* `.github/workflows/build-macos.yml`, macos-26 + Qt 6.11.2
+    (same pins as upstream's own macOS CI).
+- [x] T4.2 Conditional code signing + notarization via repository secrets
+  - *Result:* `MACOS_CERT_P12`(+password) → temp keychain + `SIGNING_IDENTITY`;
+    `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` → notarytool profile; steps
+    self-skip when secrets are absent.
+- [x] T4.3 Tag `v*` → GitHub Release draft with DMG attached
+  - *Result:* separate `release` job using `gh release create --draft`.
 - [ ] T4.4 First automated build green on GitHub
+  - *Result:* pending push.
 
 ## Phase 5 — Release
 
