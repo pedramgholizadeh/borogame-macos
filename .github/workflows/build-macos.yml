@@ -1,0 +1,126 @@
+name: Build macOS
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Borogame.app (arm64)
+    runs-on: macos-26
+    env:
+      QT_VERSION: 6.11.2
+      # Keep in sync with upstream.json
+      UPSTREAM_SHA: de2467e433821664cdd2224aad8c89a625be1ad9
+      # Mapped here so step conditions can inspect them (secrets context is
+      # not available inside step-level `if` expressions).
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      MACOS_CERT_P12_PASSWORD: ${{ secrets.MACOS_CERT_P12_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+    steps:
+      - name: Checkout Borogame macOS port
+        uses: actions/checkout@v5
+
+      - name: Install create-dmg
+        run: |
+          brew install node
+          npm install --global create-dmg
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          cache: true
+          set-env: true
+          add-tools-to-path: true
+          version: ${{ env.QT_VERSION }}
+          aqtsource: 'git+https://github.com/miurahr/aqtinstall.git@073e34d7c2ab4ae6961ed7cca690b3abd5ba5a7e'
+
+      - name: Assemble source (upstream + overlay + patches)
+        run: ./scripts/prepare-source.sh
+
+      - name: Cache upstream prebuilt macOS libraries
+        uses: actions/cache@v4
+        with:
+          path: build/upstream/libs
+          key: mac-libs-${{ env.UPSTREAM_SHA }}-1
+
+      - name: Build Borogame.app (arm64)
+        run: ./scripts/build-macos.sh
+
+      # ---- Optional code signing (requires repository secrets) ----
+      - name: Import signing certificate
+        if: env.MACOS_CERT_P12 != ''
+        run: |
+          CERT_FILE="$RUNNER_TEMP/borogame-cert.p12"
+          KEYCHAIN_FILE="$RUNNER_TEMP/borogame-build.keychain"
+          echo "$MACOS_CERT_P12" | base64 --decode > "$CERT_FILE"
+          security create-keychain -p "$MACOS_CERT_P12_PASSWORD" "$KEYCHAIN_FILE"
+          security set-keychain-settings -lut 900 "$KEYCHAIN_FILE"
+          security import "$CERT_FILE" -k "$KEYCHAIN_FILE" -P "$MACOS_CERT_P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_CERT_P12_PASSWORD" "$KEYCHAIN_FILE"
+          security list-keychains -d user -s "$KEYCHAIN_FILE" $(security list-keychains -d user | tr -d '"')
+          rm -f "$CERT_FILE"
+          echo "SIGNING_IDENTITY=Developer ID Application: Pedram Gholizadeh" >> "$GITHUB_ENV"
+
+      - name: Prepare notarization credentials
+        if: env.APPLE_ID != ''
+        run: |
+          xcrun notarytool store-credentials borogame-notary \
+            --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID"
+          echo "NOTARY_KEYCHAIN_PROFILE=borogame-notary" >> "$GITHUB_ENV"
+
+      - name: Package DMG
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            export CI_VERSION="$GITHUB_REF_NAME"
+          fi
+          ./scripts/make-dmg.sh
+
+      - name: Cleanup keychain
+        if: always() && env.SIGNING_IDENTITY != ''
+        run: |
+          security delete-keychain "$RUNNER_TEMP/borogame-build.keychain" || true
+          security list-keychains -d user -s $(security default-keychain -d user)
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Borogame-macos-arm64
+          path: build/dist/*.dmg
+          compression-level: 0
+          if-no-files-found: error
+
+  release:
+    name: Draft GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download built DMG
+        uses: actions/download-artifact@v6
+        with:
+          name: Borogame-macos-arm64
+          path: dist
+
+      - name: Create draft release with DMG
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/*.dmg \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Borogame for macOS $TAG" \
+            --notes "Native Apple Silicon build of the Borogame client. Download Borogame-*.dmg, open it, and drag Borogame.app into Applications." \
+            --draft
