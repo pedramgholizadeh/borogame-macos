@@ -22,12 +22,6 @@ BoroApi::BoroApi(QObject* parent)
     m_License = QSettings().value(kSettingsKey).toString();
 }
 
-void BoroApi::registerTypes()
-{
-    // Defined in main.cpp's registration block via qmlRegisterSingletonType;
-    // the singleton factory simply constructs us on the GUI thread.
-}
-
 bool BoroApi::loggedIn() const
 {
     return !m_License.isEmpty();

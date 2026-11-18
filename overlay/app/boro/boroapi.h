@@ -30,8 +30,6 @@ class BoroApi : public QObject
 public:
     explicit BoroApi(QObject* parent = nullptr);
 
-    static void registerTypes();
-
     bool loggedIn() const;
     QString licenseKey() const;
     QString nic() const;
