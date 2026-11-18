@@ -18,15 +18,20 @@
 
 ## Phase 1 — Recover the Borogame backend contract
 
-- [~] T1.1 Decompile official Android APK with jadx
-  - *Result:* decompilation running; custom classes identified:
-    `Store`, `TicketsActivity`, `ProfileSectionActivity`, `AutoPair`,
-    `PosterContentProvider`.
-- [ ] T1.2 Extract Borogame-specific classes into `reference/android/`
-- [ ] T1.3 Document full HTTP contract in `docs/api-contract.md`
-      (endpoints `api.php?sso|license|pinPair|tickets|fetchHost|store`,
-      request params, response shapes, thumbnails, WHMCS ticket endpoints)
-- [ ] T1.4 Confirm Windows client uses the same endpoints (payload analysis)
+- [x] T1.1 Decompile official Android APK with jadx
+  - *Result:* 1529 classes decompiled (`analysis/decompiled/`, 3 minor errors).
+- [x] T1.2 Extract Borogame-specific classes into `reference/android/`
+  - *Result:* `AutoPair`, `Store`, `TicketsActivity`, `ProfileSectionActivity`,
+    `AddComputerManually` + provenance README committed.
+- [x] T1.3 Document full HTTP contract in `docs/api-contract.md`
+  - *Result:* all six endpoints documented with exact params/JSON shapes:
+    `license` (validation+profile), `fetchHost` (`{ip}` / `"0"`), `pinPair`
+    (`PIN`+`ip` relay), `store` (array-of-arrays), `tickets` (WHMCS objects),
+    `sso` (web redirect); thumbnail URL scheme derived from title.
+- [x] T1.4 Confirm Windows client uses the same endpoints (payload analysis)
+  - *Result:* Windows payload is a moonlight-qt fork with `StoreGrids.qml`,
+    `Tickets.qml`, WHMCS `submitticket.php`/`supporttickets.php`,
+    `borogame.com/faq.php` — same service layer.
   - *Result:* preliminary analysis done — Windows client is a moonlight-qt fork
     with `StoreGrids.qml`, `Tickets.qml`, `borogame.com/faq.php` help URL,
     WHMCS `submitticket.php`/`supporttickets.php` references.

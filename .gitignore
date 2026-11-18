@@ -38,3 +38,6 @@ keychain/
 
 # --- Logs ---
 *.log
+
+# --- Local reference clone of upstream (never commit) ---
+upstream-ref/
