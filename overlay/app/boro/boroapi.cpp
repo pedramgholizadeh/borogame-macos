@@ -131,17 +131,31 @@ void BoroApi::validateLicense(const QString& key)
             }
 
             QJsonObject obj = doc.object();
-            if (!obj.value("validation").toBool()) {
+
+            // The backend sends validation as the STRING "true"/"false"
+            // (org.json's getBoolean() coerces it on Android; Qt does not).
+            QJsonValue validation = obj.value("validation");
+            bool valid = validation.toBool() ||
+                    validation.toString().compare(QLatin1String("true"), Qt::CaseInsensitive) == 0;
+            if (!valid) {
                 emit licenseValidated(false, tr("Invalid license key."));
                 return;
             }
 
-            // The same response carries the profile (docs/api-contract.md §1)
+            // The same response carries the profile (docs/api-contract.md §1).
+            // Fields arrive as JSON strings ("cards": "0"), so read them via
+            // toString() with numeric fallbacks.
             m_License = trimmed;
             m_Nic = obj.value("nic").toString();
             m_FullName = obj.value("fullName").toString();
             m_Email = obj.value("email").toString();
-            m_Cards = obj.value("cards").toInt();
+            QJsonValue cards = obj.value("cards");
+            if (cards.isString()) {
+                m_Cards = cards.toString().toInt();
+            }
+            else {
+                m_Cards = cards.toInt();
+            }
 
             QSettings().setValue(kSettingsKey, trimmed);
             emit profileChanged();

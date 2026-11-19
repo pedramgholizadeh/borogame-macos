@@ -34,30 +34,42 @@ It is obtained from the Borogame website and validated once through the
 
 ### 1. Validate license + fetch profile — `GET api.php?license=<KEY>`
 
-Used for both validation and profile display. Returns a JSON **object**:
+Used for both validation and profile display. Returns a JSON **object**
+(verified against the live backend, Nov 2026):
 
 ```json
 {
-  "validation": true,
-  "nic": "PG",
-  "fullName": "Pedram Gholizadeh",
+  "validation": "true",
+  "fName": "پدرام",
+  "lName": "قلی زاده",
+  "fullName": "پدرام قلی زاده",
   "email": "user@example.com",
-  "cards": 2
+  "phone": "912xxxxxx",
+  "nic": "پ‌ق‌ز",
+  "cards": "0"
 }
 ```
 
+> ⚠️ **Gotcha:** `validation` arrives as the **string** `"true"` / `"false"`,
+> and `cards` is a string too. The Android client survives this because
+> `org.json`'s `getBoolean()` coerces `"true"`. In Qt, use
+> `value == "true"` (case-insensitive) — a plain `QJsonValue::toBool()`
+> returns **false** for the string form.
+
 | Field        | Type    | Meaning                          |
 |--------------|---------|----------------------------------|
-| `validation` | bool    | `true` if the license is valid   |
-| `nic`        | string  | user nickname (avatar text)      |
+| `validation` | string  | `"true"` if the license is valid |
+| `fName`/`lName` | string | first / last name              |
 | `fullName`   | string  | full name                        |
 | `email`      | string  | e-mail address                   |
-| `cards`      | int     | number of credit cards / balance units |
+| `phone`      | string  | mobile number                    |
+| `nic`        | string  | user nickname (avatar text)      |
+| `cards`      | string  | number of credit cards / balance units |
 
 Client behavior (Android `ProfileSectionActivity`):
-1. If `validation == true` → persist the license, then treat the *same*
+1. If `validation == "true"` → persist the license, then treat the *same*
    response as the profile payload and display the fields.
-2. If `validation == false` → show *invalid license*.
+2. Otherwise → show *invalid license*.
 3. Transport/parse failure → show *validation error*.
 
 ### 2. Fetch assigned host — `GET api.php?fetchHost=<KEY>`
