@@ -220,7 +220,10 @@
     host status, delete, FAQ link, and network-test messages; navigation labels
     are *Game Store*, *PlayGround*, *Support*, and *Profile*. Persian
     translations regenerated (291/291).
-- [~] T9.6 Rebuild, verify, and publish `v1.0.1`
-  - *Result:* local verification complete — `prepare-source.sh --verify` passes,
-    clean rebuild launched without QML errors, `Borogame-v1.0.1.dmg` checksum
-    VALID (`c394e9e0…ddaa`). Tag/publish pending.
+- [x] T9.6 Rebuild, verify, and publish `v1.0.1`
+  - *Result:* `prepare-source.sh --verify` passes, clean rebuild launched without
+    QML errors, local DMG checksum VALID (`c394e9e0…ddaa`). Tag `v1.0.1` pushed;
+    CI runs 44438538902 and 44438541492 succeeded. Public release
+    `Borogame for macOS v1.0.1` contains `Borogame-v1.0.1.dmg`
+    (98150493 bytes, sha256 `357ff399…c29a9c`); the downloaded release asset
+    also passes `hdiutil verify`.
