@@ -1,0 +1,105 @@
+diff --git a/app/app.pro b/app/app.pro
+index 180525d..109d6bc 100644
+--- a/app/app.pro
++++ b/app/app.pro
+@@ -487,7 +487,8 @@ TRANSLATIONS += \
+     languages/qml_et.ts \
+     languages/qml_bg.ts \
+     languages/qml_eo.ts \
+-    languages/qml_ta.ts
++    languages/qml_ta.ts \
++    languages/qml_fa.ts
+ 
+ # Additional import path used to resolve QML modules in Qt Creator's code model
+ QML_IMPORT_PATH =
+diff --git a/app/gui/SettingsView.qml b/app/gui/SettingsView.qml
+index c119d15..1da8a2b 100644
+--- a/app/gui/SettingsView.qml
++++ b/app/gui/SettingsView.qml
+@@ -1175,6 +1175,11 @@ Flickable {
+                             text: "தமிழ்" // Tamil
+                             val: StreamingPreferences.LANG_TA
+                         }
++                        // Borogame port: Persian
++                        ListElement {
++                            text: "فارسی"
++                            val: StreamingPreferences.LANG_FA
++                        }
+                     }
+                     // ::onActivated must be used, as it only listens for when the index is changed by a human
+                     onActivated : {
+diff --git a/app/resources.qrc b/app/resources.qrc
+index fc7a655..345efbc 100644
+--- a/app/resources.qrc
++++ b/app/resources.qrc
+@@ -78,6 +78,8 @@
+         <file>languages/qml_bg.qm</file>
+         <file>languages/qml_eo.ts</file>
+         <file>languages/qml_eo.qm</file>
++        <file>languages/qml_fa.ts</file>
++        <file>languages/qml_fa.qm</file>
+         <file>languages/qml_ta.ts</file>
+         <file>languages/qml_ta.qm</file>
+         <file>languages/qml_pt_BR.qm</file>
+diff --git a/app/settings/streamingpreferences.cpp b/app/settings/streamingpreferences.cpp
+index 6d143af..a3c2c28 100644
+--- a/app/settings/streamingpreferences.cpp
++++ b/app/settings/streamingpreferences.cpp
+@@ -3,6 +3,7 @@
+ 
+ #include <QSettings>
+ #include <QTranslator>
++#include <QGuiApplication>
+ #include <QCoreApplication>
+ #include <QLocale>
+ #include <QReadWriteLock>
+@@ -170,7 +171,8 @@ void StreamingPreferences::reload()
+                                                static_cast<int>(settings.value(SER_STARTWINDOWED, true).toBool() ? UIDisplayMode::UI_WINDOWED
+                                                                                                                  : UIDisplayMode::UI_MAXIMIZED)).toInt());
+     language = static_cast<Language>(settings.value(SER_LANGUAGE,
+-                                                    static_cast<int>(Language::LANG_AUTO)).toInt());
++                                                    // Borogame port: default to Persian for our audience
++                                                    static_cast<int>(Language::LANG_FA)).toInt());
+ 
+ 
+     // Perform default settings updates as required based on last default version
+@@ -229,6 +231,16 @@ bool StreamingPreferences::retranslate()
+         delete newTranslator;
+     }
+ 
++    // Borogame port: mirror the whole UI for right-to-left languages.
++    // Qt Quick follows QGuiApplication's layout direction for anchors
++    // and row/column layouts, so this is sufficient for full RTL.
++    if (languageSuffix == "fa" || languageSuffix == "ckb" || languageSuffix == "he") {
++        QGuiApplication::setLayoutDirection(Qt::RightToLeft);
++    }
++    else {
++        QGuiApplication::setLayoutDirection(Qt::LeftToRight);
++    }
++
+     if (m_QmlEngine != nullptr) {
+ #if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
+         // This is a dynamic retranslation from the settings page.
+@@ -313,6 +325,9 @@ QString StreamingPreferences::getSuffixFromLanguage(StreamingPreferences::Langua
+         return "eo";
+     case LANG_TA:
+         return "ta";
++    // Borogame port: Persian
++    case LANG_FA:
++        return "fa";
+     case LANG_AUTO:
+     default:
+         return QLocale::system().name();
+diff --git a/app/settings/streamingpreferences.h b/app/settings/streamingpreferences.h
+index ad611f6..11cbfe5 100644
+--- a/app/settings/streamingpreferences.h
++++ b/app/settings/streamingpreferences.h
+@@ -108,6 +108,8 @@ public:
+         LANG_BG,
+         LANG_EO,
+         LANG_TA,
++        // Borogame port: Persian (appended per upstream's enum rule)
++        LANG_FA,
+     };
+     Q_ENUM(Language);
+ 
