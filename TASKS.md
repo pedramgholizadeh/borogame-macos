@@ -85,8 +85,12 @@
 - [x] T3.4 `scripts/install-local.sh` (quarantine-free local install for testing)
   - *Result:* /Applications install + `xattr -dr com.apple.quarantine` +
     `codesign --verify` + launch.
-- [~] T3.5 Local build verified on this Mac (Apple Silicon, Xcode 27.2)
-  - *Result:* in progress — Qt 6 installing via Homebrew.
+- [x] T3.5 Local build verified on this Mac (Apple Silicon, Xcode 27.2)
+  - *Result:* full pipeline green locally on an Apple M1: `Borogame.app` built
+    (arm64, Qt 6.12 Homebrew), `Borogame-6.2.0.dmg` produced (104 MB), app
+    launches, QML loads, BoroApi registers, Metal/HEVC hardware decode OK.
+    Fixed en route: git exec-bit on scripts, create-dmg CLI collision
+    (Homebrew ships a same-named different tool).
 
 ## Phase 4 — CI/CD
 
@@ -99,11 +103,15 @@
     self-skip when secrets are absent.
 - [x] T4.3 Tag `v*` → GitHub Release draft with DMG attached
   - *Result:* separate `release` job using `gh release create --draft`.
-- [ ] T4.4 First automated build green on GitHub
-  - *Result:* pending push.
+- [x] T4.4 First automated build green on GitHub
+  - *Result:* run #44425748057 (d0f7c2e) passed end-to-end; artifact
+    `Borogame-macos-arm64` (74 MB DMG) attached to the run.
 
 ## Phase 5 — Release
 
 - [ ] T5.1 Manual smoke test on local Mac per `test/smoke-test.md`
-- [ ] T5.2 Push repo to https://github.com/pedramgholizadeh/borogame-macos.git
+      (needs a real Borogame license + assigned host — service-team task)
+- [x] T5.2 Push repo to https://github.com/pedramgholizadeh/borogame-macos.git
+  - *Result:* `main` pushed; CI green; artifact DMG downloadable from Actions.
 - [ ] T5.3 Tag first release `v1.0.0`, publish DMG download link in README
+      (add signing secrets `MACOS_CERT_P12` etc. first for a notarized DMG)
