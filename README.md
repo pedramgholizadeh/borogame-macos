@@ -55,8 +55,8 @@ requiring a system font installation.
 ## 📥 Download
 
 The published build is
-[**v1.0.0**](https://github.com/pedramgholizadeh/borogame-macos/releases/tag/v1.0.0)
-(download `Borogame-v1.0.0.dmg`). Every push to `main` also produces a fresh
+[**v1.0.1**](https://github.com/pedramgholizadeh/borogame-macos/releases/tag/v1.0.1)
+(download `Borogame-v1.0.1.dmg`). Every push to `main` also produces a fresh
 `.dmg` artifact in the
 [Actions](https://github.com/pedramgholizadeh/borogame-macos/actions) tab —
 suitable for local testing via `scripts/install-local.sh`.

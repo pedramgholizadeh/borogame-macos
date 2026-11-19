@@ -65,6 +65,29 @@ void BoroApi::setBusy(bool busy)
     }
 }
 
+void BoroApi::applyProfile(const QJsonObject& obj)
+{
+    // The backend is inconsistent about capitalisation for the full name and
+    // sends numbers as JSON strings. Read both spellings and coerce manually.
+    m_Nic = obj.value("nic").toString();
+    QString fullName = obj.value("fullName").toString();
+    if (fullName.isEmpty()) {
+        fullName = obj.value("fullname").toString();
+    }
+    if (fullName.isEmpty()) {
+        fullName = obj.value("fName").toString() + QLatin1Char(' ') +
+                   obj.value("lName").toString();
+        fullName = fullName.trimmed();
+    }
+    m_FullName = fullName;
+    m_Email = obj.value("email").toString();
+
+    QJsonValue cards = obj.value("cards");
+    m_Cards = cards.isString() ? cards.toString().toInt() : cards.toInt();
+
+    emit profileChanged();
+}
+
 QString BoroApi::stripPort(const QString& address) const
 {
     // NvAddress::toString() yields "host:port". The Android client takes
@@ -143,22 +166,9 @@ void BoroApi::validateLicense(const QString& key)
             }
 
             // The same response carries the profile (docs/api-contract.md §1).
-            // Fields arrive as JSON strings ("cards": "0"), so read them via
-            // toString() with numeric fallbacks.
             m_License = trimmed;
-            m_Nic = obj.value("nic").toString();
-            m_FullName = obj.value("fullName").toString();
-            m_Email = obj.value("email").toString();
-            QJsonValue cards = obj.value("cards");
-            if (cards.isString()) {
-                m_Cards = cards.toString().toInt();
-            }
-            else {
-                m_Cards = cards.toInt();
-            }
-
+            applyProfile(obj);
             QSettings().setValue(kSettingsKey, trimmed);
-            emit profileChanged();
             emit loggedInChanged();
             emit licenseValidated(true, QString());
         },
@@ -166,6 +176,35 @@ void BoroApi::validateLicense(const QString& key)
             setBusy(false);
             emit licenseValidated(false, tr("Connection error: %1").arg(error));
         });
+}
+
+void BoroApi::refreshProfile()
+{
+    if (m_License.isEmpty()) {
+        return;
+    }
+
+    // Deliberately does not touch m_Busy: this runs on a timer like the
+    // Windows client's fetchUserProfileTimer and must not flicker the UI.
+    get(QString("license=%1").arg(m_License),
+        [this](const QByteArray& data) {
+            QJsonDocument doc = QJsonDocument::fromJson(data);
+            if (!doc.isObject()) {
+                return;
+            }
+
+            QJsonObject obj = doc.object();
+            QJsonValue validation = obj.value("validation");
+            bool valid = validation.toBool() ||
+                    validation.toString().compare(QLatin1String("true"), Qt::CaseInsensitive) == 0;
+            if (!valid) {
+                return;
+            }
+
+            applyProfile(obj);
+            emit profileRefreshed();
+        },
+        [](const QString&) {});
 }
 
 void BoroApi::fetchHost()
@@ -202,7 +241,24 @@ void BoroApi::fetchStore()
                 return;
             }
 
-            // Response is an array of arrays: [title, unused, gameUrl]
+            // Current Windows/backend shape (verified against the live API):
+            //   [[title], [thumbnailUrlWithoutExtension], ["games.php/<Slug>"]]
+            // Older Android-era payloads used flat strings or a full game URL
+            // in column 2; both shapes are handled here.
+            auto cleanCell = [](const QJsonValue& value) {
+                // The live endpoint wraps every cell in its own single-element
+                // array: [[title], [thumbnail], [path]]. Older payloads used
+                // plain strings, so accept both.
+                QJsonValue cell = value;
+                if (cell.isArray()) {
+                    QJsonArray inner = cell.toArray();
+                    if (!inner.isEmpty()) {
+                        cell = inner.at(0);
+                    }
+                }
+                return cell.toString().remove('[').remove(']').remove('"').trimmed();
+            };
+
             QJsonArray rows = doc.array();
             for (const QJsonValue& rowValue : rows) {
                 QJsonArray row = rowValue.toArray();
@@ -210,18 +266,47 @@ void BoroApi::fetchStore()
                     continue;
                 }
 
-                // The Android client strips literal '[', ']' and '"' from
-                // both the title and URL columns.
-                QString title = row.at(0).toString()
-                        .remove('[').remove(']').remove('"');
-                QString gameUrl = row.at(2).toString()
-                        .remove('[').remove(']').remove('"');
+                QString title = cleanCell(row.at(0));
+                QString imageUrl = cleanCell(row.at(1));
+                QString gamePath = cleanCell(row.at(2));
+                if (title.isEmpty() || gamePath.isEmpty()) {
+                    continue;
+                }
+
+                if (!imageUrl.isEmpty()) {
+                    if (imageUrl.startsWith(QLatin1String("//"))) {
+                        imageUrl.prepend(QLatin1String("https:"));
+                    }
+                    bool hasExtension = imageUrl.endsWith(QLatin1String(".jpg"), Qt::CaseInsensitive) ||
+                            imageUrl.endsWith(QLatin1String(".jpeg"), Qt::CaseInsensitive) ||
+                            imageUrl.endsWith(QLatin1String(".png"), Qt::CaseInsensitive) ||
+                            imageUrl.endsWith(QLatin1String(".webp"), Qt::CaseInsensitive) ||
+                            imageUrl.contains(QLatin1Char('?'));
+                    if (!hasExtension) {
+                        imageUrl += QLatin1String(".jpg");
+                    }
+                }
+                else {
+                    QString slug = title;
+                    slug.replace(QLatin1Char(' '), QLatin1Char('_'));
+                    imageUrl = QString(kThumbUrl) + slug + QLatin1String(".jpg");
+                }
+
+                // Accept the legacy absolute form too and reduce it to the
+                // relative path expected by the SSO redirect.
+                if (gamePath.startsWith(QLatin1String("http://")) ||
+                        gamePath.startsWith(QLatin1String("https://"))) {
+                    gamePath = QUrl(gamePath).path();
+                    while (gamePath.startsWith(QLatin1Char('/'))) {
+                        gamePath.remove(0, 1);
+                    }
+                }
 
                 QVariantMap game;
                 game["title"] = title;
-                game["imageUrl"] = QString(kThumbUrl) +
-                        title.replace(' ', '_') + ".jpg";
-                game["gameUrl"] = gameUrl;
+                game["imageUrl"] = imageUrl;
+                game["gameUrl"] = gamePath;
+                game["gamePath"] = gamePath;
                 games.append(game);
             }
             emit storeReady(games);
@@ -294,16 +379,28 @@ QString BoroApi::ssoUrl(const QString& path) const
             .arg(kBaseUrl, m_License, path);
 }
 
-void BoroApi::openGame(const QString& title)
+void BoroApi::openGame(const QString& path)
 {
-    QString underscored = title;
-    underscored.replace(' ', '_');
+    QString gamePath = path.trimmed();
+    if (gamePath.isEmpty()) {
+        return;
+    }
+
+    // Store rows now carry the exact relative path. Keep accepting a bare
+    // title from older call sites so nothing regresses during the transition.
+    if (!gamePath.contains(QLatin1Char('/')) && !gamePath.contains(QLatin1Char('.'))) {
+        gamePath = QLatin1String("games.php/") + gamePath;
+        gamePath.replace(QLatin1Char(' '), QLatin1Char('_'));
+    }
+
+    QUrl target;
     if (m_License.isEmpty()) {
-        QDesktopServices::openUrl(QString("https://borogame.com/games.php/%1").arg(underscored));
+        target = QUrl(QString("https://borogame.com/%1").arg(gamePath));
     }
     else {
-        QDesktopServices::openUrl(ssoUrl("games.php/" + underscored));
+        target = QUrl(ssoUrl(gamePath));
     }
+    QDesktopServices::openUrl(target);
 }
 
 void BoroApi::openNewTicket()

@@ -6,7 +6,7 @@ import BoroApi 1.0
 
 Page {
     id: boroStorePage
-    objectName: qsTr("Borogame Store")
+    objectName: qsTr("Game Store")
 
     BoroTheme { id: theme }
     font.family: theme.fontFamily
@@ -90,7 +90,10 @@ Page {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: BoroApi.openGame(title)
+                    // Windows parity: the store tile opens the game's web
+                    // page (signed in via SSO) where the card is activated
+                    // and the playground is reserved.
+                    onClicked: BoroApi.openGame(gameUrl)
                 }
             }
         }

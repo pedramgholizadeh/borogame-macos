@@ -123,6 +123,11 @@ jobs:
           Native Apple Silicon (arm64) build of the Borogame client, based on
           moonlight-qt v6.2.0 with a full Persian UI and M1 / 20 Mbps defaults.
 
+          This release follows the official Windows client flow: the game store
+          loads live thumbnails and opens the SSO card-activation page, hosts
+          are assigned by the service (no LAN discovery), and gameplay starts
+          and exits natively from the host's app grid.
+
           Download Borogame-*.dmg, open it, and drag Borogame.app into Applications.
           If the build is not notarized (no signing secrets configured), remove the
           quarantine attribute first:

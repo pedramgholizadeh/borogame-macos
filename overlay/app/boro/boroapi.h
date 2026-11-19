@@ -2,6 +2,7 @@
 #define BORO_API_H
 
 #include <QObject>
+#include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QString>
 #include <QVariantList>
@@ -42,9 +43,10 @@ public:
     // (api.php?sso=<license>&path=<path>).
     Q_INVOKABLE QString ssoUrl(const QString& path) const;
 
-    // Convenience helpers that open the corresponding page in the default
-    // browser, matching the Android client's behavior exactly.
-    Q_INVOKABLE void openGame(const QString& title);
+    // Open a Borogame game page. `path` is the relative path returned by the
+    // store endpoint (e.g. "games.php/EA_Sports_FC_27"). A bare legacy title
+    // is also accepted and converted to that path.
+    Q_INVOKABLE void openGame(const QString& path);
     Q_INVOKABLE void openNewTicket();
     Q_INVOKABLE void openTicket(const QString& ticketUrl);
     Q_INVOKABLE void openFaq();
@@ -53,6 +55,10 @@ public:
 public slots:
     // api.php?license=<KEY> — validates and returns the profile in one call
     void validateLicense(const QString& key);
+
+    // api.php?license=<KEY> — silently refresh the profile/card balance.
+    // Used by the Windows client's periodic fetchUserProfileTimer.
+    void refreshProfile();
 
     // api.php?fetchHost=<KEY> — service-assigned host ("0" means none)
     void fetchHost();
@@ -76,12 +82,14 @@ signals:
     void busyChanged();
 
     void licenseValidated(bool success, QString message);
+    void profileRefreshed();
     void hostFetched(QString ip);
     void storeReady(QVariantList games);
     void ticketsReady(QVariantList tickets);
 
 private:
     void setBusy(bool busy);
+    void applyProfile(const QJsonObject& obj);
     QString stripPort(const QString& address) const;
     void get(const QString& path,
              const std::function<void(const QByteArray&)>& onSuccess,

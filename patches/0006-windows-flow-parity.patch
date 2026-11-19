@@ -1,0 +1,241 @@
+diff --git a/app/gui/main.qml b/app/gui/main.qml
+--- a/app/gui/main.qml
++++ b/app/gui/main.qml
+@@ -98,6 +98,12 @@
+     // it will never insert a line break and just extend on forever.
+     ToolTip.toolTip.contentWidth: Math.min(tooltipTextLayoutHelper.width, 400)
+ 
++    // Borogame: service-assigned host + card balance refresh (Windows parity).
++    // The host never comes from LAN discovery.
++    BoroServiceController {
++        id: boroServiceController
++    }
++
+     function goBack() {
+         if (clearOnBack) {
+             // Pop all items except the first one
+@@ -325,7 +331,8 @@
+ 
+             NavigableToolButton {
+                 id: addPcButton
+-                visible: stackView.currentItem instanceof PcView
++                // Borogame port: hosts are assigned by the service, not typed in.
++                visible: false
+ 
+                 iconSource:  "qrc:/res/ic_add_to_queue_white_48px.svg"
+ 
+@@ -459,7 +466,7 @@
+                 ToolTip.delay: 1000
+                 ToolTip.timeout: 3000
+                 ToolTip.visible: hovered
+-                ToolTip.text: qsTr("Borogame Store")
++                ToolTip.text: qsTr("Game Store")
+ 
+                 onClicked: navigateTo("qrc:/gui/BoroStorePage.qml", BoroStorePage)
+ 
+@@ -477,7 +484,7 @@
+                 ToolTip.delay: 1000
+                 ToolTip.timeout: 3000
+                 ToolTip.visible: hovered
+-                ToolTip.text: qsTr("Borogame Tickets")
++                ToolTip.text: qsTr("Support")
+ 
+                 onClicked: navigateTo("qrc:/gui/BoroTicketsPage.qml", BoroTicketsPage)
+ 
+@@ -495,7 +502,7 @@
+                 ToolTip.delay: 1000
+                 ToolTip.timeout: 3000
+                 ToolTip.visible: hovered
+-                ToolTip.text: qsTr("Borogame Account")
++                ToolTip.text: qsTr("Profile")
+ 
+                 onClicked: navigateTo("qrc:/gui/BoroProfilePage.qml", BoroProfilePage)
+ 
+diff --git a/app/gui/PcView.qml b/app/gui/PcView.qml
+--- a/app/gui/PcView.qml
++++ b/app/gui/PcView.qml
+@@ -19,7 +19,7 @@
+     topMargin: 20
+     bottomMargin: 5
+     cellWidth: 310; cellHeight: 330;
+-    objectName: qsTr("Computers")
++    objectName: qsTr("PlayGround")
+ 
+     Component.onCompleted: {
+         // Don't show any highlighted item until interacting with them.
+@@ -61,13 +61,13 @@
+     function addComplete(success, detectedPortBlocking)
+     {
+         if (!success) {
+-            errorDialog.text = qsTr("Unable to connect to the specified PC.")
++            errorDialog.text = qsTr("Unable to connect to the specified Playground.")
+ 
+             if (detectedPortBlocking) {
+-                errorDialog.text += "\n\n" + qsTr("This PC's Internet connection is blocking Moonlight. Streaming over the Internet may not work while connected to this network.")
++                errorDialog.text += "\n\n" + qsTr("This PC's Internet connection is blocking Borogame. Streaming over the Internet may not work while connected to this network.")
+             }
+             else {
+-                errorDialog.helpText = qsTr("Click the Help button for possible solutions.")
++                errorDialog.helpText = qsTr("Check the firewall")
+             }
+ 
+             errorDialog.open()
+@@ -83,26 +83,30 @@
+         return model
+     }
+ 
+-    Row {
++    // Borogame port: no LAN discovery. The Windows client shows a single
++    // service-assigned "playground" and sends the user to the game page to
++    // buy a card and reserve it when none is assigned yet.
++    ColumnLayout {
+         anchors.centerIn: parent
+-        spacing: 5
+-        visible: pcGrid.count === 0
++        spacing: 16
++        visible: pcGrid.count === 0 && BoroApi.loggedIn
+ 
+-        BusyIndicator {
+-            id: searchSpinner
+-            visible: StreamingPreferences.enableMdns
+-            running: visible
+-        }
+-
+         Label {
+-            height: searchSpinner.height
+-            elide: Label.ElideRight
+-            text: StreamingPreferences.enableMdns ? qsTr("Searching for compatible hosts on your local network...")
+-                                                  : qsTr("Automatic PC discovery is disabled. Add your PC manually.")
+-            font.pointSize: 20
+-            verticalAlignment: Text.AlignVCenter
++            Layout.alignment: Qt.AlignHCenter
++            Layout.maximumWidth: 520
++            horizontalAlignment: Text.AlignHCenter
+             wrapMode: Text.Wrap
++            text: qsTr("You do not have any Active Playground")
++            font.pointSize: 20
++            color: "#F4F4F6"
+         }
++
++        Button {
++            Layout.alignment: Qt.AlignHCenter
++            text: qsTr("Click to Reserve Playground")
++            highlighted: true
++            onClicked: BoroApi.openNoHostStore()
++        }
+     }
+ 
+     model: computerModel
+@@ -168,7 +172,7 @@
+                 id: pcContextMenu
+                 initiator: pcContextMenuLoader.parent
+                 MenuItem {
+-                    text: qsTr("PC Status: %1").arg(model.online ? qsTr("Online") : qsTr("Offline"))
++                    text: qsTr("Host Status: %1").arg(model.online ? qsTr("Online") : qsTr("Offline"))
+                     font.bold: true
+                     enabled: false
+                 }
+@@ -203,7 +207,7 @@
+                     }
+                 }
+                 NavigableMenuItem {
+-                    text: qsTr("Delete PC")
++                    text: qsTr("Delete PlayGround")
+                     onTriggered: {
+                         deletePcDialog.pcIndex = index
+                         deletePcDialog.pcName = model.name
+@@ -223,7 +227,7 @@
+         onClicked: {
+             if (model.online) {
+                 if (!model.serverSupported) {
+-                    errorDialog.text = qsTr("The version of GeForce Experience on %1 is not supported by this build of Moonlight. You must update Moonlight to stream from %1.").arg(model.name)
++                    errorDialog.text = qsTr("The version of GeForce Experience on %1 is not supported by this build of Borogame.").arg(model.name)
+                     errorDialog.helpText = ""
+                     errorDialog.open()
+                 }
+@@ -287,9 +291,8 @@
+     ErrorMessageDialog {
+         id: errorDialog
+ 
+-        // Using Setup-Guide here instead of Troubleshooting because it's likely that users
+-        // will arrive here by forgetting to enable GameStream or not forwarding ports.
+-        helpUrl: "https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide"
++        // Borogame port: use the service FAQ instead of upstream Moonlight docs.
++        helpUrl: "https://borogame.com/faq.php"
+     }
+ 
+     NavigableMessageDialog {
+@@ -311,7 +314,7 @@
+         // don't allow edits to the rest of the window while open
+         property int pcIndex : -1
+         property string pcName : ""
+-        text: qsTr("Are you sure you want to remove '%1'?").arg(pcName)
++        text: qsTr("Are you sure you want to delete the Playground?")
+         standardButtons: Dialog.Yes | Dialog.No
+ 
+         onAccepted: {
+@@ -325,22 +328,22 @@
+         standardButtons: Dialog.Ok
+ 
+         onAboutToShow: {
+-            testConnectionDialog.text = qsTr("Moonlight is testing your network connection to determine if any required ports are blocked.") + "\n\n" + qsTr("This may take a few seconds…")
++            testConnectionDialog.text = qsTr("Borogame is testing your network connection to determine if any required ports are blocked.") + "\n\n" + qsTr("This may take a few seconds…")
+             showSpinner = true
+         }
+ 
+         function connectionTestComplete(result, blockedPorts)
+         {
+             if (result === -1) {
+-                text = qsTr("The network test could not be performed because none of Moonlight's connection testing servers were reachable from this PC. Check your Internet connection or try again later.")
++                text = qsTr("The network test could not be performed because none of Borogame's connection testing servers were reachable from this PC. Check your Internet connection or try again later.")
+                 imageSrc = "qrc:/res/baseline-warning-24px.svg"
+             }
+             else if (result === 0) {
+-                text = qsTr("This network does not appear to be blocking Moonlight. If you still have trouble connecting, check your PC's firewall settings.") + "\n\n" + qsTr("If you are trying to stream over the Internet, install the Moonlight Internet Hosting Tool on your gaming PC and run the included Internet Streaming Tester to check your gaming PC's Internet connection.")
++                text = qsTr("This network does not appear to be blocking Borogame. If you still have trouble connecting, check your PC's firewall settings.")
+                 imageSrc = "qrc:/res/baseline-check_circle_outline-24px.svg"
+             }
+             else {
+-                text = qsTr("Your PC's current network connection seems to be blocking Moonlight. Streaming over the Internet may not work while connected to this network.") + "\n\n" + qsTr("The following network ports were blocked:") + "\n"
++                text = qsTr("Your PC's current network connection seems to be blocking Borogame. Streaming over the Internet may not work while connected to this network.") + "\n\n" + qsTr("The following network ports were blocked:") + "\n"
+                 text += blockedPorts
+                 imageSrc = "qrc:/res/baseline-error_outline-24px.svg"
+             }
+diff --git a/app/gui/SettingsView.qml b/app/gui/SettingsView.qml
+--- a/app/gui/SettingsView.qml
++++ b/app/gui/SettingsView.qml
+@@ -1785,6 +1785,9 @@
+ 
+                 CheckBox {
+                     id: enableMdns
++                    // Borogame port: hosts come from the service; LAN discovery
++                    // is never used, so do not expose this upstream toggle.
++                    visible: false
+                     width: parent.width
+                     text: qsTr("Automatically find PCs on the local network (Recommended)")
+                     font.pointSize: 12
+diff --git a/app/settings/streamingpreferences.cpp b/app/settings/streamingpreferences.cpp
+--- a/app/settings/streamingpreferences.cpp
++++ b/app/settings/streamingpreferences.cpp
+@@ -134,7 +134,9 @@
+     gameOptimizations = settings.value(SER_GAMEOPTS, true).toBool();
+     playAudioOnHost = settings.value(SER_HOSTAUDIO, false).toBool();
+     multiController = settings.value(SER_MULTICONT, true).toBool();
+-    enableMdns = settings.value(SER_MDNS, true).toBool();
++    // Borogame port: hosts are assigned by the service. Even if an older
++    // profile had this enabled, never start an mDNS LAN search.
++    enableMdns = false;
+     quitAppAfter = settings.value(SER_QUITAPPAFTER, false).toBool();
+     absoluteMouseMode = settings.value(SER_ABSMOUSEMODE, false).toBool();
+     absoluteTouchMode = settings.value(SER_ABSTOUCHMODE, true).toBool();
+diff --git a/app/qml.qrc b/app/qml.qrc
+--- a/app/qml.qrc
++++ b/app/qml.qrc
+@@ -5,6 +5,7 @@
+         <file>gui/BoroStorePage.qml</file>
+         <file>gui/BoroTicketsPage.qml</file>
+         <file>gui/BoroProfilePage.qml</file>
++        <file>gui/BoroServiceController.qml</file>
+         <file>gui/PcView.qml</file>
+         <file>gui/AppView.qml</file>
+         <file>gui/SettingsView.qml</file>

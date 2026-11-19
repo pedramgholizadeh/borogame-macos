@@ -130,8 +130,8 @@
     <name>BoroProfilePage</name>
     <message>
         <location filename="../gui/BoroProfilePage.qml" line="9" />
-        <source>Borogame Account</source>
-        <translation>حساب کاربری بوروگیم</translation>
+        <source>Profile</source>
+        <translation>پروفایل</translation>
     </message>
     <message>
         <location filename="../gui/BoroProfilePage.qml" line="49" />
@@ -211,8 +211,8 @@
     <name>BoroStorePage</name>
     <message>
         <location filename="../gui/BoroStorePage.qml" line="9" />
-        <source>Borogame Store</source>
-        <translation>فروشگاه بوروگیم</translation>
+        <source>Game Store</source>
+        <translation>گیم استور</translation>
     </message>
     <message>
         <location filename="../gui/BoroStorePage.qml" line="108" />
@@ -229,8 +229,8 @@
     <name>BoroTicketsPage</name>
     <message>
         <location filename="../gui/BoroTicketsPage.qml" line="9" />
-        <source>Borogame Tickets</source>
-        <translation>تیکت‌های بوروگیم</translation>
+        <source>Support</source>
+        <translation>پشتیبانی</translation>
     </message>
     <message>
         <location filename="../gui/BoroTicketsPage.qml" line="125" />
@@ -409,38 +409,38 @@
     <name>PcView</name>
     <message>
         <location filename="../gui/PcView.qml" line="22" />
-        <source>Computers</source>
-        <translation>کامپیوترها</translation>
+        <source>PlayGround</source>
+        <translation>اتاق بازی</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="64" />
-        <source>Unable to connect to the specified PC.</source>
-        <translation>اتصال به کامپیوتر مشخص‌شده ممکن نیست.</translation>
+        <source>Unable to connect to the specified Playground.</source>
+        <translation>اتصال به اتاق بازی مشخص‌شده ممکن نیست.</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="67" />
-        <source>This PC's Internet connection is blocking Moonlight. Streaming over the Internet may not work while connected to this network.</source>
+        <source>This PC's Internet connection is blocking Borogame. Streaming over the Internet may not work while connected to this network.</source>
         <translation>اتصال اینترنت این کامپیوتر بوروگیم را مسدود می‌کند. استریم از طریق اینترنت ممکن است در این شبکه کار نکند.</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="70" />
-        <source>Click the Help button for possible solutions.</source>
-        <translation>برای راه‌حل‌های احتمالی روی دکمه‌ی راهنما کلیک کنید.</translation>
+        <source>Check the firewall</source>
+        <translation>فایروال سیستم عامل تان را بررسی کنید</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="100" />
-        <source>Searching for compatible hosts on your local network...</source>
-        <translation>در حال جست‌وجوی میزبان‌های سازگار در شبکه‌ی محلی...</translation>
+        <source>You do not have any Active Playground</source>
+        <translation>شما هیچ اتاق بازی فعالی ندارید!</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="101" />
-        <source>Automatic PC discovery is disabled. Add your PC manually.</source>
-        <translation>شناسایی خودکار کامپیوتر غیرفعال است. کامپیوتر خود را به‌صورت دستی اضافه کنید.</translation>
+        <source>Click to Reserve Playground</source>
+        <translation>ساخت اتاق بازی</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="171" />
-        <source>PC Status: %1</source>
-        <translation>وضعیت کامپیوتر: %1</translation>
+        <source>Host Status: %1</source>
+        <translation>وضعیت اتاق بازی: %1</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="171" />
@@ -474,8 +474,8 @@
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="206" />
-        <source>Delete PC</source>
-        <translation>حذف کامپیوتر</translation>
+        <source>Delete PlayGround</source>
+        <translation>حذف اتاق بازی</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="214" />
@@ -484,8 +484,8 @@
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="226" />
-        <source>The version of GeForce Experience on %1 is not supported by this build of Moonlight. You must update Moonlight to stream from %1.</source>
-        <translation>نسخه‌ی GeForce Experience روی %1 توسط این نسخه از بوروگیم پشتیبانی نمی‌شود. برای استریم از %1 باید بوروگیم را به‌روز کنید.</translation>
+        <source>The version of GeForce Experience on %1 is not supported by this build of Borogame.</source>
+        <translation>این نسخه از GeForce Experience در حال حاضر توسط بروگیم پشتیبانی نمی شود %1.</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="301" />
@@ -499,13 +499,13 @@
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="314" />
-        <source>Are you sure you want to remove '%1'?</source>
-        <translation>آیا مطمئنید می‌خواهید «%1» را حذف کنید؟</translation>
+        <source>Are you sure you want to delete the Playground?</source>
+        <translation>آیا مطمئنید که میخواهید اتاق بازی را حذف کنید؟</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="328" />
-        <source>Moonlight is testing your network connection to determine if any required ports are blocked.</source>
-        <translation>بوروگیم در حال بررسی اتصال شبکه‌ی شماست تا ببیند آیا پورت‌های لازم مسدود شده‌اند یا نه.</translation>
+        <source>Borogame is testing your network connection to determine if any required ports are blocked.</source>
+        <translation>بوروگیم در حال تست اتصال شما به اتاق بازی است</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="328" />
@@ -514,13 +514,14 @@
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="335" />
-        <source>The network test could not be performed because none of Moonlight's connection testing servers were reachable from this PC. Check your Internet connection or try again later.</source>
+        <source>The network test could not be performed because none of Borogame's connection testing servers were reachable from this PC. Check your Internet connection or try again later.</source>
         <translation>تست شبکه انجام نشد، چون هیچ‌کدام از سرورهای تست اتصال بوروگیم در دسترس نبودند. اتصال اینترنت را بررسی کنید یا بعداً دوباره تلاش کنید.</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="339" />
-        <source>This network does not appear to be blocking Moonlight. If you still have trouble connecting, check your PC's firewall settings.</source>
-        <translation>به نظر نمی‌رسد این شبکه بوروگیم را مسدود کند. اگر همچنان مشکل اتصال دارید، تنظیمات فایروال کامپیوترتان را بررسی کنید.</translation>
+        <source>This network does not appear to be blocking Borogame. If you still have trouble connecting, check your PC's firewall settings.</source>
+        <translation>به نظر می رسد که اتاق بازی آماده اتصال به رایانه شماست!
+اگر در برقراری ارتباط با اتاق بازی مشکل دارید فایروال سیستم را بررسی کنید</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="339" />
@@ -529,8 +530,9 @@
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="343" />
-        <source>Your PC's current network connection seems to be blocking Moonlight. Streaming over the Internet may not work while connected to this network.</source>
-        <translation>به نظر می‌رسد اتصال شبکه‌ی فعلی کامپیوتر شما بوروگیم را مسدود می‌کند. استریم از طریق اینترنت ممکن است در این شبکه کار نکند.</translation>
+        <source>Your PC's current network connection seems to be blocking Borogame. Streaming over the Internet may not work while connected to this network.</source>
+        <translation>پورت های اتصال اتاق بازی مسدود شده اند
+با پشتیبانی تماس بگیرید</translation>
     </message>
     <message>
         <location filename="../gui/PcView.qml" line="343" />

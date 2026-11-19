@@ -6,7 +6,7 @@ import BoroApi 1.0
 
 Page {
     id: boroTicketsPage
-    objectName: qsTr("Borogame Tickets")
+    objectName: qsTr("Support")
 
     BoroTheme { id: theme }
     font.family: theme.fontFamily

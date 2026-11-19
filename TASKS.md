@@ -112,8 +112,11 @@
       partial coverage from T6.1 live API validation)
 - [x] T5.2 Push repo to https://github.com/pedramgholizadeh/borogame-macos.git
   - *Result:* `main` pushed; CI green; artifact DMG downloadable from Actions.
-- [~] T5.3 Tag first release `v1.0.0`, publish DMG download link in README
-      (signing secrets `MACOS_CERT_P12` etc. would enable a notarized DMG)
+- [x] T5.3 Tag first release `v1.0.0`, publish DMG download link in README
+  - *Result:* annotated tag `v1.0.0` (`45b7ada`) pushed; CI run #44433750390
+    published a public GitHub Release with `Borogame-v1.0.0.dmg`
+    (98,143,415 bytes, sha256 `b76ebe76…5d25d6a`). README download link updated.
+    Ad-hoc signed because no signing secrets are configured.
 
 ## Phase 6 — Live validation & Persian localization
 
@@ -157,9 +160,9 @@
         (`hdiutil verify`: checksum VALID). Settings card rendered offscreen in
         Persian with RTL and confirmed non-blank; binding loop in its button
         background removed.
-- [~] T7.4 Publish the same commit as a GitHub Release (`v1.0.0`)
-      - *Result:* workflow now publishes (no draft). Tagging deferred until the
-        final local build is verified.
+- [x] T7.4 Publish the same commit as a GitHub Release (`v1.0.0`)
+  - *Result:* completed in T5.3/T8.4 — the verified design build was tagged
+    and published as a public release with the DMG attached.
 
 ## Phase 8 — Minimal luxurious dark design & typography
 
@@ -179,4 +182,45 @@
     clean rebuild produced `Borogame-6.2.0.dmg` (99 MB) with VALID checksum.
     Binary contains the bundled Vazirmatn resources and BoroTheme QML, and the
     offscreen Settings render is clean (no binding-loop or QML errors).
-- [ ] T8.4 Publish `v1.0.0` with the verified DMG on GitHub Releases
+- [x] T8.4 Publish `v1.0.0` with the verified DMG on GitHub Releases
+  - *Result:* release published 2026-11-19T01:07:45Z, not draft/prerelease;
+    `Borogame-v1.0.0.dmg` attached and downloadable.
+
+## Phase 9 — Windows-client flow parity
+
+- [x] T9.1 Inspect the official Windows client instead of guessing
+  - *Result:* downloaded and unpacked the Windows installer from
+    `borogame.com/app.php`; extracted Borogame's compiled QML metadata from
+    `Borogame.exe` (`Auth.qml`, `StoreGrids.qml`, `PcView.qml`, `AppView.qml`,
+    `app.js`). Confirmed: one-time license activation, store rows carry
+    thumbnail URL + game path, service-assigned host only, PIN relay pairing,
+    native app grid for start/exit. No LAN discovery anywhere in the flow.
+- [x] T9.2 Replace LAN search with the service-assigned playground flow
+  - *Result:* new `BoroServiceController.qml` polls `fetchHost`, adds only the
+    assigned host to `ComputerManager`, and refreshes the profile/card balance
+    on timers. mDNS is forced off and its settings toggle plus the manual
+    "Add PC" button are hidden (`patches/0006-windows-flow-parity.patch`).
+    `PcView.qml` now shows *You do not have any Active Playground* with a
+    *Click to Reserve Playground* CTA instead of the LAN search message.
+- [x] T9.3 Fix store thumbnails and card-activation navigation
+  - *Result:* `BoroApi::fetchStore()` now reads the live backend's
+    `[[title], [thumbnailUrl], [games.php/<Slug>]]` shape (and legacy flat
+    rows), appends `.jpg` to the server-provided thumbnail URL, and maps the
+    relative path from column 2. Tile clicks open the SSO game page via
+    `BoroApi.openGame(gameUrl)`, matching the Windows card purchase/activation
+    step. Absolute legacy URLs are still accepted.
+
+- [x] T9.4 Preserve native game start/exit
+  - *Result:* no browser launch for gameplay. After the room is reserved, the
+    assigned host appears in `PcView`; clicking it uses upstream `AppView.qml`
+    → `Session`/`StreamSegue.qml` for *Start Game* and `QuitSegue.qml` for
+    *Exit Game*, exactly like the Windows fork.
+- [x] T9.5 Align host-page labels with the Windows client
+  - *Result:* `PcView.qml` now uses the Windows strings for playground errors,
+    host status, delete, FAQ link, and network-test messages; navigation labels
+    are *Game Store*, *PlayGround*, *Support*, and *Profile*. Persian
+    translations regenerated (291/291).
+- [~] T9.6 Rebuild, verify, and publish `v1.0.1`
+  - *Result:* local verification complete — `prepare-source.sh --verify` passes,
+    clean rebuild launched without QML errors, `Borogame-v1.0.1.dmg` checksum
+    VALID (`c394e9e0…ddaa`). Tag/publish pending.

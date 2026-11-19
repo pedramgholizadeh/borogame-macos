@@ -3,7 +3,6 @@ import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import QtQuick.Controls.Material 2.2
 
-import ComputerManager 1.0
 import BoroApi 1.0
 
 Page {
@@ -107,13 +106,12 @@ Page {
             messageLabel.color = theme.success
             messageLabel.text = qsTr("License accepted. Looking for your host…")
             boroLoginPage.pendingIp = ""
-            BoroApi.fetchHost()
+            // BoroServiceController performs the initial host fetch.
         }
 
         function onHostFetched(ip) {
             if (ip && ip !== "0") {
-                // Add the service-assigned host so it appears in the PC grid
-                ComputerManager.addNewHostManually(ip)
+                // BoroServiceController adds the host; this page only reports it.
                 messageLabel.text = qsTr("Host %1 added. Enjoy your games!").arg(ip)
                 popTimer.start()
             }

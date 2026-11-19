@@ -6,7 +6,7 @@ import BoroApi 1.0
 
 Page {
     id: boroProfilePage
-    objectName: qsTr("Borogame Account")
+    objectName: qsTr("Profile")
 
     BoroTheme { id: theme }
     font.family: theme.fontFamily

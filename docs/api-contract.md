@@ -102,22 +102,31 @@ Response body is ignored; HTTP success is logged only.
 
 ### 4. Store listing — `GET api.php?store=true`
 
-Returns a JSON **array of arrays**:
+Returns a JSON **array of arrays** (live shape and official Windows client,
+Nov 2026):
 
 ```json
 [
-  ["[Game Title]", "<unused column>", "https://borogame.com/games.php/Game_Title"],
+  [["EA Sports FC 27"],
+   ["https://borogame.com/templates/borogame/dist/images/thumb/EA_Sports_FC_27"],
+   ["games.php/EA_Sports_FC_27"]],
   ...
 ]
 ```
 
-- Column 0: title (may contain literal `[`, `]`, `"` — the client strips them)
-- Column 2: canonical game page URL
-- Thumbnail: derived from the title —
-  `templates/borogame/dist/images/thumb/<Title_underscored>.jpg`
+Each cell is wrapped in its own single-element array. Legacy payloads used
+plain strings instead; the client accepts both forms.
+
+- Column 0: title (older rows may contain literal `[`, `]`, `"` — strip them)
+- Column 1: thumbnail URL **without** its `.jpg` extension; the Windows client
+  appends `.jpg`. Fall back to the title-derived URL only when this column is
+  empty: `templates/borogame/dist/images/thumb/<Title_underscored>.jpg`
+- Column 2: relative game page path (older Android-era rows used a full URL;
+  reduce it to `games.php/<Slug>`)
 - Click action (with license): open browser at
-  `api.php?sso=<KEY>&path=games.php/<Title_underscored>`
-- Click action (without license): open browser at `games.php/<Title_underscored>`
+  `api.php?sso=<KEY>&path=<column 2>` — this is the card purchase / activation
+  page and is where the user reserves the playground
+- Click action (without license): open `https://borogame.com/<column 2>`
 
 ### 5. Support tickets — `GET api.php?tickets=<KEY>`
 
@@ -148,6 +157,35 @@ Departments observed: `پشتیبانی فنی` (technical), `پشتیبانی �
 Not a data API: opening this URL in a browser logs the user into the
 Borogame website using their license key and forwards to `path`
 (e.g. `games.php/Title`, `submitticket.php`, `faq.php/`).
+
+## Official Windows client flow (verified from `Borogame.exe`)
+
+The shipped Windows client is a moonlight-qt fork with Borogame's `app.js`,
+`Auth.qml`, `StoreGrids.qml`, `PcView.qml`, and `AppView.qml`. Its flow is:
+
+1. **One-time activation** — `Auth.qml` posts
+   `api.php?license=<KEY>`, shows the returned `fullName`/`phone` for
+   confirmation, then stores `license` + `athorized` in `QSettings` and
+   restarts.
+2. **Game store** — `StoreGrids.qml` lists `api.php?store=true` rows using
+   column 1 for the thumbnail (`+ ".jpg"`) and column 2 for the path. Clicking
+   a tile opens `api.php?sso=<license>&path=<gamePath>` in the browser. That
+   page sells/activates the card and creates the game room.
+3. **Host** — `app.js::getHost()` polls `api.php?fetchHost=<license>` and calls
+   `ComputerManager.addNewHostManually(<ip>)` only for the service-assigned
+   address (`"0"` means no reserved room). There is **no LAN/mDNS discovery**.
+   `PcView.qml` shows the single "playground" or the *You do not have any
+   Active Playground* CTA that opens `games.php` via SSO.
+4. **Pairing** — `PcView.qml` generates a Moonlight PIN, relays it with
+   `api.php?pinPair=<PIN>&ip=<host>` and pairs the same host. The user never
+   types a PIN.
+5. **Play** — clicking the paired host pushes the upstream `AppView.qml`, which
+   lists the host's apps, starts a native Moonlight `Session` on
+   *Start Game*, and quits it through `QuitSegue.qml` on *Exit Game*. The FAQ's
+   in-game exit shortcut is `Ctrl+Alt+Shift+Q`.
+
+The macOS port mirrors this flow; the store tile only performs step 2, and
+returning to the app picks up the assigned host at step 3 automatically.
 
 ## Error handling rules
 
