@@ -1,0 +1,74 @@
+--- a/app/main.cpp
++++ b/app/main.cpp
+@@ -9,6 +9,7 @@
+ #include <QNetworkProxyFactory>
+ #include <QPalette>
+ #include <QFont>
++#include <QFontDatabase>
+ #include <QCursor>
+ #include <QElapsedTimer>
+ #include <QTemporaryFile>
+@@ -990,6 +991,14 @@
+         qputenv("QT_QUICK_CONTROLS_MATERIAL_PRIMARY", "#3F51B5");
+     }
+ 
++    // Borogame: bundle Vazirmatn (SIL OFL) for consistent Persian and Latin
++    // typography across the whole application.
++    QFontDatabase::addApplicationFont(":/res/fonts/Vazirmatn-Regular.ttf");
++    QFontDatabase::addApplicationFont(":/res/fonts/Vazirmatn-Medium.ttf");
++    QFontDatabase::addApplicationFont(":/res/fonts/Vazirmatn-SemiBold.ttf");
++    QFontDatabase::addApplicationFont(":/res/fonts/Vazirmatn-Bold.ttf");
++    app.setFont(QFont("Vazirmatn", 11));
++
+     QQmlApplicationEngine engine;
+     QString initialView;
+     bool hasGUI = true;
+--- a/app/gui/main.qml
++++ b/app/gui/main.qml
+@@ -22,15 +22,17 @@
+     id: window
+     width: 1280
+     height: 600
++    font.family: "Vazirmatn"
+ 
+     // This function runs prior to creation of the initial StackView item
+     function doEarlyInit() {
+-        // Override the background color to Material 2 colors for Qt 6.5+
+-        // in order to improve contrast between GFE's placeholder box art
+-        // and the background of the app grid.
+-        if (SystemProperties.usesMaterial3Theme) {
+-            Material.background = "#303030"
+-        }
++        // Borogame: a restrained, minimal dark palette.
++        window.color = "#0B0B0D"
++        Material.theme = Material.Dark
++        Material.background = "#0B0B0D"
++        Material.foreground = "#F4F4F6"
++        Material.accent = "#B39DDB"
++        Material.primary = "#151518"
+ 
+         SdlGamepadKeyNavigation.enable()
+     }
+--- a/app/resources.qrc
++++ b/app/resources.qrc
+@@ -19,6 +19,10 @@
+         <file>res/baseline-check_circle_outline-24px.svg</file>
+         <file>res/discord.svg</file>
+         <file>res/borogame.svg</file>
++        <file>res/fonts/Vazirmatn-Regular.ttf</file>
++        <file>res/fonts/Vazirmatn-Medium.ttf</file>
++        <file>res/fonts/Vazirmatn-SemiBold.ttf</file>
++        <file>res/fonts/Vazirmatn-Bold.ttf</file>
+         <file>res/ic_boro_store.svg</file>
+         <file>res/ic_boro_tickets.svg</file>
+         <file>res/ic_boro_profile.svg</file>
+--- a/app/qml.qrc
++++ b/app/qml.qrc
+@@ -9,6 +9,7 @@
+         <file>gui/AppView.qml</file>
+         <file>gui/SettingsView.qml</file>
+         <file>gui/BoroSettingsQuickProfile.qml</file>
++        <file>gui/BoroTheme.qml</file>
+         <file>gui/StreamSegue.qml</file>
+         <file>gui/GamepadMapper.qml</file>
+         <file>gui/QuitSegue.qml</file>

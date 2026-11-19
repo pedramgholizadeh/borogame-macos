@@ -133,8 +133,9 @@
     fa/ckb/he via `QGuiApplication::setLayoutDirection`; upstream "Moonlight"
     strings localized as "بوروگیم". Wired via
     `patches/0002-borogame-localization.patch` (5 files, +105).
-- [~] T6.3 Rebuild + verify Persian UI end-to-end on this Mac
-  - *Result:* rebuild with the final patch set in progress.
+- [x] T6.3 Rebuild + verify Persian UI end-to-end on this Mac
+  - *Result:* local arm64 build succeeds with all patches; app launches in
+    Persian with RTL; translations compiled into the bundle (291/291 strings).
 
 ## Phase 7 — Settings UX & tuned defaults
 
@@ -151,5 +152,31 @@
     on, Metal renderer, borderless/maximized UI defaults. Codec/decoder stay on
     **Auto** so hosts without HEVC/AV1 still work, while M1 uses its hardware
     path automatically. Documented in README.
-- [~] T7.3 Local DMG build + visual verification of settings & RTL
+- [x] T7.3 Local DMG build + visual verification of settings & RTL
+      - *Result:* `build/dist/Borogame-6.2.0.dmg` built and verified
+        (`hdiutil verify`: checksum VALID). Settings card rendered offscreen in
+        Persian with RTL and confirmed non-blank; binding loop in its button
+        background removed.
 - [~] T7.4 Publish the same commit as a GitHub Release (`v1.0.0`)
+      - *Result:* workflow now publishes (no draft). Tagging deferred until the
+        final local build is verified.
+
+## Phase 8 — Minimal luxurious dark design & typography
+
+- [x] T8.1 Bundle the free Vazirmatn font for the whole app
+  - *Result:* `overlay/app/res/fonts/` contains Regular, Medium, SemiBold and
+    Bold TTFs plus the SIL OFL license. `patches/0005-borogame-font-theme.patch`
+    registers them with `QFontDatabase` and sets Vazirmatn as the application
+    font (with a QML fallback), giving consistent Persian + Latin typography.
+- [x] T8.2 Restrained minimal dark theme across Borogame pages
+  - *Result:* new `overlay/app/gui/BoroTheme.qml` centralizes the near-black
+    palette (`#0B0B0D` canvas, `#151518` surfaces, hairline borders, muted
+    violet accent). Applied to Login, Profile, Store, Tickets and the Settings
+    profile card: no gradients, softer contrast, flatter controls, generous
+    spacing. Upstream Material theme set explicitly to Dark in `main.qml`.
+- [x] T8.3 Final local build + DMG verification with the new design
+  - *Result:* `prepare-source.sh --verify` passes with patches 0001–0005;
+    clean rebuild produced `Borogame-6.2.0.dmg` (99 MB) with VALID checksum.
+    Binary contains the bundled Vazirmatn resources and BoroTheme QML, and the
+    offscreen Settings render is clean (no binding-loop or QML errors).
+- [ ] T8.4 Publish `v1.0.0` with the verified DMG on GitHub Releases

@@ -12,6 +12,9 @@ Page {
 
     property string pendingIp: ""
 
+    BoroTheme { id: theme }
+    font.family: theme.fontFamily
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 40
@@ -23,15 +26,16 @@ Page {
             id: logo
             Layout.alignment: Qt.AlignHCenter
             source: "qrc:/res/borogame.svg"
-            sourceSize.width: 160
-            sourceSize.height: 160
+            sourceSize.width: 132
+            sourceSize.height: 132
             fillMode: Image.PreserveAspectFit
         }
 
         Label {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("Welcome to Borogame")
-            font.pointSize: 24
+            font.pointSize: 22
+            color: theme.textPrimary
         }
 
         Label {
@@ -39,7 +43,7 @@ Page {
             Layout.maximumWidth: 480
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
-            color: "#BDBDBD"
+            color: theme.textSecondary
             text: qsTr("Sign in with your Borogame license key to reach your cloud gaming host, the game store, and support tickets.")
         }
 
@@ -60,7 +64,7 @@ Page {
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
             visible: text.length > 0
-            color: "#EF5350"
+            color: theme.danger
         }
 
         Button {
@@ -100,7 +104,7 @@ Page {
                 return
             }
 
-            messageLabel.color = "#66BB6A"
+            messageLabel.color = theme.success
             messageLabel.text = qsTr("License accepted. Looking for your host…")
             boroLoginPage.pendingIp = ""
             BoroApi.fetchHost()
@@ -114,7 +118,7 @@ Page {
                 popTimer.start()
             }
             else {
-                messageLabel.color = "#FFB74D"
+                messageLabel.color = theme.warning
                 messageLabel.text = qsTr("No host is assigned to your account yet. Open the Borogame store to reserve one.")
                 boroLoginPage.pendingIp = "0"
             }

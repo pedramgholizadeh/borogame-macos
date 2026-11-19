@@ -8,6 +8,9 @@ Page {
     id: boroTicketsPage
     objectName: qsTr("Borogame Tickets")
 
+    BoroTheme { id: theme }
+    font.family: theme.fontFamily
+
     property bool loaded: false
 
     Component.onCompleted: {
@@ -60,8 +63,8 @@ Page {
             width: ticketsList.width
             height: ticketContent.implicitHeight + 24
             radius: 10
-            color: "#1C1C1E"
-            border.color: "#3A3A3C"
+            color: theme.surface
+            border.color: theme.hairline
             border.width: 1
 
             ColumnLayout {
@@ -84,7 +87,7 @@ Page {
                     Label {
                         Layout.fillWidth: true
                         text: deptname
-                        color: "#BDBDBD"
+                        color: theme.textSecondary
                         elide: Label.ElideRight
                     }
 
@@ -139,7 +142,7 @@ Page {
         Label {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("No tickets found.")
-            color: "#BDBDBD"
+            color: theme.textSecondary
         }
 
         Button {

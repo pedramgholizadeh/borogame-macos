@@ -8,6 +8,9 @@ Page {
     id: boroProfilePage
     objectName: qsTr("Borogame Account")
 
+    BoroTheme { id: theme }
+    font.family: theme.fontFamily
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 40
@@ -21,7 +24,7 @@ Page {
             width: 84
             height: 84
             radius: 42
-            color: "#673AB7"
+            color: theme.accentStrong
 
             Label {
                 anchors.centerIn: parent
@@ -41,13 +44,13 @@ Page {
         Label {
             Layout.alignment: Qt.AlignHCenter
             text: BoroApi.email
-            color: "#BDBDBD"
+            color: theme.textSecondary
         }
 
         Label {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("Cards: %1").arg(BoroApi.cards)
-            color: "#BDBDBD"
+            color: theme.textSecondary
         }
 
         Item { height: 12 }
@@ -80,7 +83,7 @@ Page {
             Layout.alignment: Qt.AlignHCenter
             flat: true
             text: qsTr("Sign out")
-            Material.foreground: "#EF5350"
+            Material.foreground: theme.danger
 
             onClicked: signOutDialog.open()
         }

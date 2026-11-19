@@ -16,71 +16,80 @@ Rectangle {
     id: profileCard
 
     implicitHeight: contentColumn.implicitHeight + 2 * contentColumn.anchors.margins
-    radius: 10
-    color: "#333333"
+    radius: theme.radius
+    color: theme.surface
     border {
         width: 1
-        color: "#5E35B1"
+        color: theme.hairline
     }
+
+    BoroTheme { id: theme }
 
     property bool showConfirmation: false
 
-    // Top accent strip, clipped to the rounded corners of the card.
-    clip: true
+    // A single quiet accent rail instead of a loud header banner.
     Rectangle {
         anchors {
             left: parent.left
-            right: parent.right
             top: parent.top
+            bottom: parent.bottom
         }
-        height: 4
-        color: "#9575CD"
+        width: 2
+        radius: 1
+        color: theme.accent
+        opacity: 0.75
     }
 
     ColumnLayout {
         id: contentColumn
         anchors {
             fill: parent
-            margins: 16
+            margins: 18
+            leftMargin: 24
         }
-        spacing: 10
+        spacing: 12
 
         RowLayout {
-            spacing: 12
+            spacing: 14
 
             Rectangle {
-                Layout.preferredWidth: 36
-                Layout.preferredHeight: 36
-                radius: 18
-                color: "#673AB7"
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
+                radius: 16
+                color: theme.accentWash
 
                 Image {
                     anchors.centerIn: parent
                     source: "qrc:/res/borogame.svg"
-                    sourceSize.width: 22
-                    sourceSize.height: 22
+                    sourceSize.width: 20
+                    sourceSize.height: 20
                     fillMode: Image.PreserveAspectFit
                 }
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 2
+                spacing: 3
 
                 Label {
                     text: qsTr("Recommended for your Mac")
                     font {
+                        family: theme.fontFamily
                         pointSize: 15
-                        bold: true
+                        weight: Font.Medium
                     }
+                    color: theme.textPrimary
                 }
 
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Tuned for Apple Silicon and a 20 Mbps connection. Apply it any time to reset the streaming settings on this Mac.")
-                    font.pointSize: 9
+                    font {
+                        family: theme.fontFamily
+                        pointSize: 9
+                    }
                     wrapMode: Text.Wrap
-                    color: "#BDBDBD"
+                    color: theme.textSecondary
                 }
             }
         }
@@ -90,62 +99,82 @@ Rectangle {
             Layout.fillWidth: true
 
             Rectangle {
-                radius: 4
-                color: "#452A75"
-                Layout.preferredHeight: 24
-                Layout.preferredWidth: profileChip.implicitWidth + 16
+                Layout.preferredHeight: 22
+                Layout.preferredWidth: profileChip.implicitWidth + 14
+                radius: theme.smallRadius
+                color: theme.accentWash
 
                 Label {
                     id: profileChip
                     anchors.centerIn: parent
                     text: qsTr("1080p · 60 FPS")
-                    font.pointSize: 9
-                    color: "#E1BEE7"
+                    font {
+                        family: theme.fontFamily
+                        pointSize: 9
+                    }
+                    color: theme.accent
                 }
             }
 
             Rectangle {
-                radius: 4
-                color: "#452A75"
-                Layout.preferredHeight: 24
-                Layout.preferredWidth: bitrateChip.implicitWidth + 16
+                Layout.preferredHeight: 22
+                Layout.preferredWidth: bitrateChip.implicitWidth + 14
+                radius: theme.smallRadius
+                color: theme.accentWash
 
                 Label {
                     id: bitrateChip
                     anchors.centerIn: parent
                     text: qsTr("10 Mbps, adaptive")
-                    font.pointSize: 9
-                    color: "#E1BEE7"
+                    font {
+                        family: theme.fontFamily
+                        pointSize: 9
+                    }
+                    color: theme.accent
                 }
             }
 
             Rectangle {
-                radius: 4
-                color: "#452A75"
-                Layout.preferredHeight: 24
-                Layout.preferredWidth: decoderChip.implicitWidth + 16
+                Layout.preferredHeight: 22
+                Layout.preferredWidth: decoderChip.implicitWidth + 14
+                radius: theme.smallRadius
+                color: theme.accentWash
 
                 Label {
                     id: decoderChip
                     anchors.centerIn: parent
                     text: qsTr("Metal hardware decode")
-                    font.pointSize: 9
-                    color: "#E1BEE7"
+                    font {
+                        family: theme.fontFamily
+                        pointSize: 9
+                    }
+                    color: theme.accent
                 }
             }
 
-            Item {
-                Layout.fillWidth: true
-            }
+            Item { Layout.fillWidth: true }
         }
 
         RowLayout {
-            spacing: 12
+            spacing: 14
 
             Button {
                 id: applyButton
                 text: qsTr("Apply recommended settings")
-                highlighted: true
+                flat: true
+                font {
+                    family: theme.fontFamily
+                    pointSize: 10
+                }
+                Material.foreground: theme.accent
+                background: Rectangle {
+                    radius: theme.smallRadius
+                    color: applyButton.hovered ? theme.accentWash : "transparent"
+                    border {
+                        width: 1
+                        color: theme.accent
+                    }
+                }
 
                 ToolTip.delay: 800
                 ToolTip.timeout: 5000
@@ -176,8 +205,11 @@ Rectangle {
             Label {
                 visible: profileCard.showConfirmation
                 text: qsTr("Applied. Start a new stream to use it.")
-                color: "#81C784"
-                font.pointSize: 9
+                font {
+                    family: theme.fontFamily
+                    pointSize: 9
+                }
+                color: theme.success
                 wrapMode: Text.Wrap
             }
         }

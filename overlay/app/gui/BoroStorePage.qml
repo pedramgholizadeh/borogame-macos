@@ -8,6 +8,9 @@ Page {
     id: boroStorePage
     objectName: qsTr("Borogame Store")
 
+    BoroTheme { id: theme }
+    font.family: theme.fontFamily
+
     property bool loaded: false
 
     Component.onCompleted: {
@@ -49,8 +52,8 @@ Page {
                 id: card
                 anchors.fill: parent
                 radius: 10
-                color: "#1C1C1E"
-                border.color: "#3A3A3C"
+                color: theme.surface
+                border.color: theme.hairline
                 border.width: 1
 
                 Image {
@@ -106,7 +109,7 @@ Page {
         Label {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("The store is empty right now.")
-            color: "#BDBDBD"
+            color: theme.textSecondary
         }
 
         Button {

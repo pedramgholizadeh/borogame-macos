@@ -44,11 +44,19 @@ The **Settings** page starts with a *Recommended for your Mac* card. Press
 **Apply recommended settings** at any time to reapply the profile — useful on
 machines that already stored older preferences.
 
+## 🎨 Interface
+
+The app uses a restrained near-black dark theme with a single muted violet
+accent, minimal borders and generous spacing. All Persian and Latin text uses
+the bundled [Vazirmatn](https://github.com/rastikerdar/vazirmatn) font
+(SIL Open Font License), so the UI stays consistent on every Mac without
+requiring a system font installation.
+
 ## 📥 Download
 
 The published build is
 [**v1.0.0**](https://github.com/pedramgholizadeh/borogame-macos/releases/tag/v1.0.0)
-(download `Borogame-6.2.0.dmg`). Every push to `main` also produces a fresh
+(download `Borogame-v1.0.0.dmg`). Every push to `main` also produces a fresh
 `.dmg` artifact in the
 [Actions](https://github.com/pedramgholizadeh/borogame-macos/actions) tab —
 suitable for local testing via `scripts/install-local.sh`.
