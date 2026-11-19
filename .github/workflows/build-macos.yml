@@ -114,13 +114,23 @@ jobs:
           name: Borogame-macos-arm64
           path: dist
 
-      - name: Create draft release with DMG
+      - name: Publish release with DMG
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          Native Apple Silicon (arm64) build of the Borogame client, based on
+          moonlight-qt v6.2.0 with a full Persian UI and M1 / 20 Mbps defaults.
+
+          Download Borogame-*.dmg, open it, and drag Borogame.app into Applications.
+          If the build is not notarized (no signing secrets configured), remove the
+          quarantine attribute first:
+
+              xattr -dr com.apple.quarantine /Applications/Borogame.app
+          NOTES
           gh release create "$TAG" dist/*.dmg \
             --repo "$GITHUB_REPOSITORY" \
             --title "Borogame for macOS $TAG" \
-            --notes "Native Apple Silicon build of the Borogame client. Download Borogame-*.dmg, open it, and drag Borogame.app into Applications." \
-            --draft
+            --verify-tag \
+            --notes-file "$RUNNER_TEMP/release-notes.md"

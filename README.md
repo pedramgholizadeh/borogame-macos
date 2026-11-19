@@ -32,13 +32,26 @@ login/SSO, auto-pairing) applied on top.
 - Clean-room modernization: based on upstream **moonlight-qt v6.2.0** (newer
   than the original Windows fork, which was built from Sep-2024 dependencies)
 
+## ⚙️ Defaults for M1 + 20 Mbps
+
+The client ships with a profile tuned for an Apple M1 MacBook on a 20 Mbps
+connection: **1080p / 60 FPS**, a **10 Mbps adaptive bitrate** (50% link
+headroom), frame pacing, the Metal renderer, a maximized window, and automatic
+codec/decoder selection so M1 hardware decoding is used whenever the host
+supports HEVC. The UI opens in **Persian** with full RTL layout.
+
+The **Settings** page starts with a *Recommended for your Mac* card. Press
+**Apply recommended settings** at any time to reapply the profile — useful on
+machines that already stored older preferences.
+
 ## 📥 Download
 
-Latest builds are attached to
-[GitHub Releases](https://github.com/pedramgholizadeh/borogame-macos/releases)
-(`v*` tags). Every push to `main` also produces a fresh unsigned `.dmg` artifact
-in the [Actions](https://github.com/pedramgholizadeh/borogame-macos/actions)
-tab — suitable for local testing via `scripts/install-local.sh`.
+The published build is
+[**v1.0.0**](https://github.com/pedramgholizadeh/borogame-macos/releases/tag/v1.0.0)
+(download `Borogame-6.2.0.dmg`). Every push to `main` also produces a fresh
+`.dmg` artifact in the
+[Actions](https://github.com/pedramgholizadeh/borogame-macos/actions) tab —
+suitable for local testing via `scripts/install-local.sh`.
 
 > **Gatekeeper note:** signed & notarized builds are produced when signing
 > secrets are configured in CI. Unsigned builds must be installed with

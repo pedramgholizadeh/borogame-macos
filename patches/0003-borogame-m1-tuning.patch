@@ -1,0 +1,40 @@
+--- a/app/settings/streamingpreferences.cpp
++++ b/app/settings/streamingpreferences.cpp
+@@ -138,7 +138,8 @@
+     quitAppAfter = settings.value(SER_QUITAPPAFTER, false).toBool();
+     absoluteMouseMode = settings.value(SER_ABSMOUSEMODE, false).toBool();
+     absoluteTouchMode = settings.value(SER_ABSTOUCHMODE, true).toBool();
+-    framePacing = settings.value(SER_FRAMEPACING, false).toBool();
++    // Borogame port: frame pacing smooths jitter on 20 Mbps links
++    framePacing = settings.value(SER_FRAMEPACING, true).toBool();
+     connectionWarnings = settings.value(SER_CONNWARNINGS, true).toBool();
+     configurationWarnings = settings.value(SER_CONFWARNINGS, true).toBool();
+     richPresence = settings.value(SER_RICHPRESENCE, true).toBool();
+@@ -161,14 +162,16 @@
+                                                   static_cast<int>(VideoCodecConfig::VCC_AUTO)).toInt());
+     videoDecoderSelection = static_cast<VideoDecoderSelection>(settings.value(SER_VIDEODEC,
+                                                   static_cast<int>(VideoDecoderSelection::VDS_AUTO)).toInt());
++    // Borogame port: Metal is the lowest-latency renderer on Apple Silicon
+     rendererSelection = static_cast<RendererSelection>(settings.value(SER_RENDERER,
+-                                                  static_cast<int>(RendererSelection::RS_AUTO)).toInt());
++                                                  static_cast<int>(RendererSelection::RS_METAL)).toInt());
+     windowMode = static_cast<WindowMode>(settings.value(SER_WINDOWMODE,
+                                                         // Try to load from the old preference value too
+                                                         static_cast<int>(settings.value(SER_FULLSCREEN, true).toBool() ?
+                                                                              recommendedFullScreenMode : WindowMode::WM_WINDOWED)).toInt());
++    // Borogame port: open maximized on the small MacBook display
+     uiDisplayMode = static_cast<UIDisplayMode>(settings.value(SER_UIDISPLAYMODE,
+-                                               static_cast<int>(settings.value(SER_STARTWINDOWED, true).toBool() ? UIDisplayMode::UI_WINDOWED
++                                               static_cast<int>(settings.value(SER_STARTWINDOWED, false).toBool() ? UIDisplayMode::UI_WINDOWED
+                                                                                                                  : UIDisplayMode::UI_MAXIMIZED)).toInt());
+     language = static_cast<Language>(settings.value(SER_LANGUAGE,
+                                                     // Borogame port: default to Persian for our audience
+@@ -432,5 +435,7 @@
+         resolutionFactor *= 2;
+     }
+ 
+-    return qRound(resolutionFactor * frameRateFactor) * 1000;
++    // Borogame port: half of upstream's LAN-oriented default. 1080p60 now
++    // resolves to 10 Mbps, leaving headroom on a 20 Mbps connection.
++    return qRound(resolutionFactor * frameRateFactor) * 500;
+ }

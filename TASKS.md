@@ -32,9 +32,6 @@
   - *Result:* Windows payload is a moonlight-qt fork with `StoreGrids.qml`,
     `Tickets.qml`, WHMCS `submitticket.php`/`supporttickets.php`,
     `borogame.com/faq.php` — same service layer.
-  - *Result:* preliminary analysis done — Windows client is a moonlight-qt fork
-    with `StoreGrids.qml`, `Tickets.qml`, `borogame.com/faq.php` help URL,
-    WHMCS `submitticket.php`/`supporttickets.php` references.
 
 ## Phase 2 — Port implementation
 
@@ -101,8 +98,9 @@
   - *Result:* `MACOS_CERT_P12`(+password) → temp keychain + `SIGNING_IDENTITY`;
     `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` → notarytool profile; steps
     self-skip when secrets are absent.
-- [x] T4.3 Tag `v*` → GitHub Release draft with DMG attached
-  - *Result:* separate `release` job using `gh release create --draft`.
+- [x] T4.3 Tag `v*` → GitHub Release with DMG attached
+  - *Result:* separate `release` job using `gh release create`, published
+    (not draft) since the requested deliverable is a downloadable release.
 - [x] T4.4 First automated build green on GitHub
   - *Result:* run #44425748057 (d0f7c2e) passed end-to-end; artifact
     `Borogame-macos-arm64` (74 MB DMG) attached to the run.
@@ -110,8 +108,48 @@
 ## Phase 5 — Release
 
 - [ ] T5.1 Manual smoke test on local Mac per `test/smoke-test.md`
-      (needs a real Borogame license + assigned host — service-team task)
+      (needs a real Borogame license + assigned host — service-team task;
+      partial coverage from T6.1 live API validation)
 - [x] T5.2 Push repo to https://github.com/pedramgholizadeh/borogame-macos.git
   - *Result:* `main` pushed; CI green; artifact DMG downloadable from Actions.
-- [ ] T5.3 Tag first release `v1.0.0`, publish DMG download link in README
-      (add signing secrets `MACOS_CERT_P12` etc. first for a notarized DMG)
+- [~] T5.3 Tag first release `v1.0.0`, publish DMG download link in README
+      (signing secrets `MACOS_CERT_P12` etc. would enable a notarized DMG)
+
+## Phase 6 — Live validation & Persian localization
+
+- [x] T6.1 Debug "invalid license" reported with a real panel-issued key
+  - *Result:* root cause — backend returns `"validation":"true"` as a STRING
+    (org.json coerces it on Android; Qt `toBool()` does not). Fixed in
+    `BoroApi::validateLicense` (+ string `cards`). Verified live: key from the
+    Borogame panel now validates via `test/run-api-smoke.sh`
+    (PASS license + PASS fetchHost). Contract doc updated with real
+    response shape (`fName`/`lName`/`phone` fields, string `cards`).
+- [x] T6.2 Full Persian (فارسی) localization
+  - *Result:* `overlay/app/languages/qml_fa.ts` + compiled `qml_fa.qm`
+    (283/283 strings translated, 0 unfinished) covering every user-facing
+    string incl. streaming errors and settings; Persian added to the
+    language enum (`LANG_FA`), suffix map, and settings dropdown; **default
+    language set to Persian** for Borogame users; RTL mirroring enabled for
+    fa/ckb/he via `QGuiApplication::setLayoutDirection`; upstream "Moonlight"
+    strings localized as "بوروگیم". Wired via
+    `patches/0002-borogame-localization.patch` (5 files, +105).
+- [~] T6.3 Rebuild + verify Persian UI end-to-end on this Mac
+  - *Result:* rebuild with the final patch set in progress.
+
+## Phase 7 — Settings UX & tuned defaults
+
+- [x] T7.1 Polished settings page with one-click Borogame profile
+  - *Result:* new `overlay/app/gui/BoroSettingsQuickProfile.qml` — full-width
+    accent card at the top of Settings with translated 1080p60 / 10 Mbps /
+    Metal chips and an **Apply recommended settings** button that also fixes
+    machines with older saved preferences. Hooked into upstream via the
+    surgical `patches/0004-settings-profile-card.patch`; RTL anchor mirroring
+    added. Persian translations extended to 291/291 strings.
+- [x] T7.2 Defaults tuned for Apple M1 + 20 Mbps internet
+  - *Result:* `patches/0003-borogame-m1-tuning.patch` — upstream's LAN-oriented
+    default bitrate halved (1080p60 → 10 Mbps, 50% link headroom), frame pacing
+    on, Metal renderer, borderless/maximized UI defaults. Codec/decoder stay on
+    **Auto** so hosts without HEVC/AV1 still work, while M1 uses its hardware
+    path automatically. Documented in README.
+- [~] T7.3 Local DMG build + visual verification of settings & RTL
+- [~] T7.4 Publish the same commit as a GitHub Release (`v1.0.0`)
